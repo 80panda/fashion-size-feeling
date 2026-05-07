@@ -1,0 +1,1567 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>fitto — 服のサイズ比較</title>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #1c1c1c; --ink-2: #4a4a4a; --ink-3: #8a8a8a;
+      --line: #d8d6d2; --line-2: #e8e6e2;
+      --paper: #faf8f4; --paper-2: #f3f0ea;
+      --accent: #6b7c5a; --accent-soft: #aab59a;
+      --warn: #b86a4a; --ok: #5a7a5a;
+    }
+    html, body { margin: 0; padding: 0; background: #1a1a1a;
+      font-family: "Noto Sans JP", "Inter", system-ui, -apple-system, sans-serif;
+      color: var(--ink); -webkit-font-smoothing: antialiased; }
+    body { min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      padding: 24px; box-sizing: border-box; }
+    * { box-sizing: border-box; }
+    button { font-family: inherit; }
+    input, select, textarea { font-family: inherit; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+window.TWEAK_DEFAULTS = { "judgementUI": "all", "darkPhone": false, "showLabels": true };
+</script>
+
+<!-- ── ios-frame ── -->
+<script type="text/babel">
+function IOSStatusBar({ dark = false, time = '9:41' }) {
+  const c = dark ? '#fff' : '#000';
+  return (
+    <div style={{ display:'flex', gap:154, alignItems:'center', justifyContent:'center',
+      padding:'21px 24px 19px', boxSizing:'border-box', position:'relative', zIndex:20, width:'100%' }}>
+      <div style={{ flex:1, height:22, display:'flex', alignItems:'center', justifyContent:'center', paddingTop:1.5 }}>
+        <span style={{ fontFamily:'-apple-system,"SF Pro",system-ui', fontWeight:590, fontSize:17, lineHeight:'22px', color:c }}>{time}</span>
+      </div>
+      <div style={{ flex:1, height:22, display:'flex', alignItems:'center', justifyContent:'center', gap:7, paddingTop:1, paddingRight:1 }}>
+        <svg width="19" height="12" viewBox="0 0 19 12">
+          <rect x="0" y="7.5" width="3.2" height="4.5" rx="0.7" fill={c}/>
+          <rect x="4.8" y="5" width="3.2" height="7" rx="0.7" fill={c}/>
+          <rect x="9.6" y="2.5" width="3.2" height="9.5" rx="0.7" fill={c}/>
+          <rect x="14.4" y="0" width="3.2" height="12" rx="0.7" fill={c}/>
+        </svg>
+        <svg width="17" height="12" viewBox="0 0 17 12">
+          <path d="M8.5 3.2C10.8 3.2 12.9 4.1 14.4 5.6L15.5 4.5C13.7 2.7 11.2 1.5 8.5 1.5C5.8 1.5 3.3 2.7 1.5 4.5L2.6 5.6C4.1 4.1 6.2 3.2 8.5 3.2Z" fill={c}/>
+          <path d="M8.5 6.8C9.9 6.8 11.1 7.3 12 8.2L13.1 7.1C11.8 5.9 10.2 5.1 8.5 5.1C6.8 5.1 5.2 5.9 3.9 7.1L5 8.2C5.9 7.3 7.1 6.8 8.5 6.8Z" fill={c}/>
+          <circle cx="8.5" cy="10.5" r="1.5" fill={c}/>
+        </svg>
+        <svg width="27" height="13" viewBox="0 0 27 13">
+          <rect x="0.5" y="0.5" width="23" height="12" rx="3.5" stroke={c} strokeOpacity="0.35" fill="none"/>
+          <rect x="2" y="2" width="20" height="9" rx="2" fill={c}/>
+          <path d="M25 4.5V8.5C25.8 8.2 26.5 7.2 26.5 6.5C26.5 5.8 25.8 4.8 25 4.5Z" fill={c} fillOpacity="0.4"/>
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+function IOSGlassPill({ children, dark = false, style = {} }) {
+  return (
+    <div style={{ height:44, minWidth:44, borderRadius:9999, position:'relative', overflow:'hidden',
+      display:'flex', alignItems:'center', justifyContent:'center',
+      boxShadow: dark ? '0 2px 6px rgba(0,0,0,0.35),0 6px 16px rgba(0,0,0,0.2)' : '0 1px 3px rgba(0,0,0,0.07),0 3px 10px rgba(0,0,0,0.06)',
+      ...style }}>
+      <div style={{ position:'absolute', inset:0, borderRadius:9999,
+        backdropFilter:'blur(12px) saturate(180%)', WebkitBackdropFilter:'blur(12px) saturate(180%)',
+        background: dark ? 'rgba(120,120,128,0.28)' : 'rgba(255,255,255,0.5)' }} />
+      <div style={{ position:'absolute', inset:0, borderRadius:9999,
+        boxShadow: dark ? 'inset 1.5px 1.5px 1px rgba(255,255,255,0.15)' : 'inset 1.5px 1.5px 1px rgba(255,255,255,0.7)',
+        border: dark ? '0.5px solid rgba(255,255,255,0.15)' : '0.5px solid rgba(0,0,0,0.06)' }} />
+      <div style={{ position:'relative', zIndex:1, display:'flex', alignItems:'center', padding:'0 4px' }}>{children}</div>
+    </div>
+  );
+}
+
+function IOSDevice({ children, width=402, height=874, dark=false }) {
+  return (
+    <div style={{ width, height, borderRadius:48, overflow:'hidden', position:'relative',
+      background: dark ? '#000' : '#F2F2F7',
+      boxShadow:'0 40px 80px rgba(0,0,0,0.18),0 0 0 1px rgba(0,0,0,0.12)',
+      fontFamily:'-apple-system,system-ui,sans-serif', WebkitFontSmoothing:'antialiased' }}>
+      <div style={{ position:'absolute', top:11, left:'50%', transform:'translateX(-50%)',
+        width:126, height:37, borderRadius:24, background:'#000', zIndex:50 }} />
+      <div style={{ position:'absolute', top:0, left:0, right:0, zIndex:10 }}>
+        <IOSStatusBar dark={dark} />
+      </div>
+      <div style={{ height:'100%', display:'flex', flexDirection:'column' }}>
+        <div style={{ flex:1, overflow:'auto' }}>{children}</div>
+      </div>
+      <div style={{ position:'absolute', bottom:0, left:0, right:0, zIndex:60,
+        height:34, display:'flex', justifyContent:'center', alignItems:'flex-end',
+        paddingBottom:8, pointerEvents:'none' }}>
+        <div style={{ width:139, height:5, borderRadius:100,
+          background: dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.25)' }} />
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, { IOSDevice, IOSStatusBar, IOSGlassPill });
+</script>
+
+<!-- ── tweaks-panel ── -->
+<script type="text/babel">
+const __TWEAKS_STYLE = `
+  .twk-panel{position:fixed;right:16px;bottom:16px;z-index:2147483646;width:280px;
+    max-height:calc(100vh - 32px);display:flex;flex-direction:column;
+    background:rgba(250,249,247,.78);color:#29261b;
+    -webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%);
+    border:.5px solid rgba(255,255,255,.6);border-radius:14px;
+    box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 12px 40px rgba(0,0,0,.18);
+    font:11.5px/1.4 ui-sans-serif,system-ui,-apple-system,sans-serif;overflow:hidden}
+  .twk-hd{display:flex;align-items:center;justify-content:space-between;
+    padding:10px 8px 10px 14px;cursor:move;user-select:none}
+  .twk-hd b{font-size:12px;font-weight:600}
+  .twk-x{appearance:none;border:0;background:transparent;color:rgba(41,38,27,.55);
+    width:22px;height:22px;border-radius:6px;cursor:default;font-size:13px;line-height:1}
+  .twk-x:hover{background:rgba(0,0,0,.06);color:#29261b}
+  .twk-body{padding:2px 14px 14px;display:flex;flex-direction:column;gap:10px;
+    overflow-y:auto;min-height:0}
+  .twk-row{display:flex;flex-direction:column;gap:5px}
+  .twk-row-h{flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
+  .twk-lbl{display:flex;justify-content:space-between;align-items:baseline;color:rgba(41,38,27,.72)}
+  .twk-lbl>span:first-child{font-weight:500}
+  .twk-sect{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+    color:rgba(41,38,27,.45);padding:10px 0 0}
+  .twk-sect:first-child{padding-top:0}
+  .twk-seg{position:relative;display:flex;padding:2px;border-radius:8px;background:rgba(0,0,0,.06);user-select:none}
+  .twk-seg-thumb{position:absolute;top:2px;bottom:2px;border-radius:6px;
+    background:rgba(255,255,255,.9);box-shadow:0 1px 2px rgba(0,0,0,.12);transition:left .15s,width .15s}
+  .twk-seg button{appearance:none;position:relative;z-index:1;flex:1;border:0;
+    background:transparent;color:inherit;font:inherit;font-weight:500;min-height:22px;
+    border-radius:6px;cursor:default;padding:4px 6px}
+  .twk-toggle{position:relative;width:32px;height:18px;border:0;border-radius:999px;
+    background:rgba(0,0,0,.15);transition:background .15s;cursor:default;padding:0}
+  .twk-toggle[data-on="1"]{background:#34c759}
+  .twk-toggle i{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+  .twk-toggle[data-on="1"] i{transform:translateX(14px)}
+  .twk-btn{appearance:none;height:26px;padding:0 12px;border:0;border-radius:7px;
+    background:rgba(0,0,0,.78);color:#fff;font:inherit;font-weight:500;cursor:default}
+  .twk-btn:hover{background:rgba(0,0,0,.88)}
+`;
+
+function useTweaks(defaults) {
+  const [values, setValues] = React.useState(defaults);
+  const setTweak = React.useCallback((keyOrEdits, val) => {
+    const edits = typeof keyOrEdits === 'object' && keyOrEdits !== null ? keyOrEdits : { [keyOrEdits]: val };
+    setValues((prev) => ({ ...prev, ...edits }));
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits }, '*');
+  }, []);
+  return [values, setTweak];
+}
+
+function TweaksPanel({ title = 'Tweaks', children }) {
+  const [open, setOpen] = React.useState(false);
+  const dragRef = React.useRef(null);
+  const offsetRef = React.useRef({ x: 16, y: 16 });
+
+  React.useEffect(() => {
+    const onMsg = (e) => {
+      const t = e?.data?.type;
+      if (t === '__activate_edit_mode') setOpen(true);
+      else if (t === '__deactivate_edit_mode') setOpen(false);
+    };
+    window.addEventListener('message', onMsg);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+
+  const onDragStart = (e) => {
+    const panel = dragRef.current;
+    if (!panel) return;
+    const r = panel.getBoundingClientRect();
+    const sx = e.clientX, sy = e.clientY;
+    const startRight = window.innerWidth - r.right;
+    const startBottom = window.innerHeight - r.bottom;
+    const move = (ev) => {
+      offsetRef.current = { x: startRight - (ev.clientX - sx), y: startBottom - (ev.clientY - sy) };
+      panel.style.right = Math.max(16, offsetRef.current.x) + 'px';
+      panel.style.bottom = Math.max(16, offsetRef.current.y) + 'px';
+    };
+    const up = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+  };
+
+  if (!open) return null;
+  return (
+    <>
+      <style>{__TWEAKS_STYLE}</style>
+      <div ref={dragRef} className="twk-panel" style={{ right: offsetRef.current.x, bottom: offsetRef.current.y }}>
+        <div className="twk-hd" onMouseDown={onDragStart}>
+          <b>{title}</b>
+          <button className="twk-x" onClick={() => { setOpen(false); window.parent.postMessage({ type: '__edit_mode_dismissed' }, '*'); }}>✕</button>
+        </div>
+        <div className="twk-body">{children}</div>
+      </div>
+    </>
+  );
+}
+
+function TweakSection({ label }) {
+  return <div className="twk-sect">{label}</div>;
+}
+
+function TweakToggle({ label, value, onChange }) {
+  return (
+    <div className="twk-row twk-row-h">
+      <div className="twk-lbl"><span>{label}</span></div>
+      <button type="button" className="twk-toggle" data-on={value ? '1' : '0'}
+              onClick={() => onChange(!value)}><i /></button>
+    </div>
+  );
+}
+
+function TweakRadio({ label, value, options, onChange }) {
+  const opts = options.map((o) => (typeof o === 'object' ? o : { value: o, label: o }));
+  const idx = Math.max(0, opts.findIndex((o) => o.value === value));
+  const n = opts.length;
+  const trackRef = React.useRef(null);
+  const segAt = (clientX) => {
+    const r = trackRef.current.getBoundingClientRect();
+    const i = Math.floor(((clientX - r.left - 2) / (r.width - 4)) * n);
+    return opts[Math.max(0, Math.min(n - 1, i))].value;
+  };
+  const onPointerDown = (e) => {
+    const v0 = segAt(e.clientX);
+    if (v0 !== value) onChange(v0);
+    const move = (ev) => { const v = segAt(ev.clientX); if (v !== value) onChange(v); };
+    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+  return (
+    <div className="twk-row">
+      <div className="twk-lbl"><span>{label}</span></div>
+      <div ref={trackRef} className="twk-seg" onPointerDown={onPointerDown}>
+        <div className="twk-seg-thumb"
+             style={{ left:`calc(2px + ${idx} * (100% - 4px) / ${n})`, width:`calc((100% - 4px) / ${n})` }} />
+        {opts.map((o) => <button key={o.value} type="button">{o.label}</button>)}
+      </div>
+    </div>
+  );
+}
+
+function TweakButton({ label, onClick }) {
+  return <button type="button" className="twk-btn" onClick={onClick}>{label}</button>;
+}
+
+Object.assign(window, { useTweaks, TweaksPanel, TweakSection, TweakToggle, TweakRadio, TweakButton });
+</script>
+
+<!-- ── data ── -->
+<script type="text/babel">
+const CATEGORIES = {
+  pants: { id:'pants', label:'ボトムス', labelEn:'Pants', fields:[
+    { key:'waist', ja:'ウエスト', short:'W', axis:'circ' },
+    { key:'hip',   ja:'ヒップ',   short:'H', axis:'circ' },
+    { key:'thigh', ja:'わたり幅', short:'TH', axis:'flat' },
+    { key:'rise',  ja:'股上',     short:'R',  axis:'flat' },
+    { key:'hem',   ja:'裾幅',     short:'HM', axis:'flat' },
+    { key:'inseam',ja:'股下',     short:'IN', axis:'flat' },
+  ]},
+  tops: { id:'tops', label:'トップス', labelEn:'Tops', fields:[
+    { key:'shoulder', ja:'肩幅',   short:'S',  axis:'flat' },
+    { key:'chest',    ja:'身幅',   short:'C',  axis:'flat' },
+    { key:'length',   ja:'着丈',   short:'L',  axis:'flat' },
+    { key:'sleeve',   ja:'袖丈',   short:'SL', axis:'flat' },
+    { key:'cuff',     ja:'袖口',   short:'CF', axis:'flat' },
+    { key:'neck',     ja:'首回り', short:'N',  axis:'circ' },
+  ]},
+  outer: { id:'outer', label:'アウター', labelEn:'Outer', fields:[
+    { key:'shoulder', ja:'肩幅', short:'S',  axis:'flat' },
+    { key:'chest',    ja:'身幅', short:'C',  axis:'flat' },
+    { key:'length',   ja:'着丈', short:'L',  axis:'flat' },
+    { key:'sleeve',   ja:'袖丈', short:'SL', axis:'flat' },
+    { key:'hem',      ja:'裾幅', short:'HM', axis:'flat' },
+  ]},
+};
+
+const DEFAULT_WARDROBE = [
+  { id:'w1', category:'pants', name:'ジャストパンツ', brand:'A.P.C. — Petit Standard', sizeLabel:'31', primary:true,
+    measures:{ waist:84.5, hip:100.5, thigh:31, rise:25, hem:18.5, inseam:78.5 }, note:'基準にしている一本' },
+  { id:'w2', category:'pants', name:'ややゆるめパンツ', brand:'AURALEE — Light Wool', sizeLabel:'4', primary:false,
+    measures:{ waist:88, hip:104, thigh:33, rise:27, hem:19.5, inseam:80 }, note:'休日用にゆとりあり' },
+  { id:'w3', category:'tops', name:'ジャストTシャツ', brand:'COMOLI — Cotton Tee', sizeLabel:'2', primary:true,
+    measures:{ shoulder:44, chest:51, length:67, sleeve:21, cuff:17, neck:41 }, note:'夏の基準' },
+  { id:'w4', category:'tops', name:'お気に入りニット', brand:'YAECA — Crew Knit', sizeLabel:'M', primary:false,
+    measures:{ shoulder:46, chest:56, length:65, sleeve:60, cuff:9.5, neck:18 }, note:'ゆとり多め' },
+  { id:'w5', category:'outer', name:'ジャストコート', brand:'MARGARET HOWELL — Wool Coat', sizeLabel:'S', primary:true,
+    measures:{ shoulder:47, chest:56, length:102, sleeve:62, hem:60 }, note:'インナー薄手前提' },
+];
+
+const SAMPLE_CANDIDATE_PANTS = {
+  brand:'Lemaire', product:'Twisted Belted Pants', sizeLabel:'46', category:'pants',
+  measures:{ waist:87, hip:106, rise:30, hem:22, inseam:82 },
+};
+
+const TOLERANCE = {
+  waist:{ fit:2, loose:5, major:9 }, hip:{ fit:2, loose:5, major:9 },
+  chest:{ fit:2, loose:5, major:9 }, neck:{ fit:1, loose:2, major:4 },
+  shoulder:{ fit:1.5, loose:3, major:5 }, thigh:{ fit:1.5, loose:3, major:5 },
+  rise:{ fit:1.5, loose:3, major:5 }, hem:{ fit:2, loose:4, major:6 },
+  cuff:{ fit:1, loose:2, major:4 }, length:{ fit:2, loose:5, major:9 },
+  sleeve:{ fit:2, loose:4, major:7 }, inseam:{ fit:2, loose:4, major:7 },
+};
+
+function estimateField(category, key, measures) {
+  const m = measures || {};
+  if (category === 'pants') {
+    if (key === 'thigh' && m.hip) return +(m.hip * 0.305).toFixed(1);
+    if (key === 'hem' && m.thigh) return +(m.thigh * 0.6).toFixed(1);
+    if (key === 'rise' && m.waist) return +(m.waist * 0.30).toFixed(1);
+    if (key === 'inseam') return 80;
+    if (key === 'waist' && m.hip) return +(m.hip * 0.85).toFixed(1);
+    if (key === 'hip' && m.waist) return +(m.waist * 1.18).toFixed(1);
+  }
+  if (category === 'tops' || category === 'outer') {
+    if (key === 'shoulder' && m.chest) return +(m.chest * 0.83).toFixed(1);
+    if (key === 'chest' && m.shoulder) return +(m.shoulder * 1.21).toFixed(1);
+    if (key === 'sleeve') return category === 'outer' ? 62 : 60;
+    if (key === 'length') return 68;
+    if (key === 'cuff' && m.sleeve) return 9.5;
+    if (key === 'neck' && m.chest) return +(m.chest * 0.34).toFixed(1);
+  }
+  return null;
+}
+
+function compareItem(baseGarment, candidate) {
+  const cat = CATEGORIES[baseGarment.category];
+  if (!cat) return [];
+  return cat.fields.map(f => {
+    const base = baseGarment.measures?.[f.key];
+    let target = candidate.measures?.[f.key];
+    let estimated = false;
+    if (target === undefined || target === null || target === '') {
+      const est = estimateField(candidate.category, f.key, candidate.measures);
+      if (est !== null) { target = est; estimated = true; }
+    }
+    if (base == null || target == null) return { ...f, base, target, diff:null, status:'missing', estimated };
+    const diff = +(target - base).toFixed(1);
+    const tol = TOLERANCE[f.key] || { fit:2, loose:4, major:7 };
+    const abs = Math.abs(diff);
+    let status;
+    if (abs <= tol.fit) status = 'fit';
+    else if (abs <= tol.loose) status = diff > 0 ? 'slightly-loose' : 'slightly-tight';
+    else if (abs <= tol.major) status = diff > 0 ? 'loose' : 'tight';
+    else status = diff > 0 ? 'too-loose' : 'too-tight';
+    return { ...f, base, target, diff, status, estimated };
+  });
+}
+
+function verdict(rows) {
+  const valid = rows.filter(r => r.diff != null);
+  if (!valid.length) return { label:'判定不可', score:null, summary:'サイズ情報が足りません', tone:'neutral' };
+  let score = 100, majorCount = 0, looseCount = 0, tightCount = 0;
+  valid.forEach(r => {
+    const tol = TOLERANCE[r.key] || { fit:2, loose:4, major:7 };
+    const abs = Math.abs(r.diff);
+    if (abs <= tol.fit) score -= 0;
+    else if (abs <= tol.loose) score -= 4;
+    else if (abs <= tol.major) score -= 10;
+    else { score -= 18; majorCount++; }
+    if (r.diff > tol.fit) looseCount++;
+    if (r.diff < -tol.fit) tightCount++;
+  });
+  score = Math.max(0, Math.round(score));
+  let label, tone, summary;
+  if (score >= 88) { label='ぴったり'; tone='ok'; summary='ジャストとほぼ同寸。安心して買えます。'; }
+  else if (score >= 70 && looseCount > tightCount) { label='少しゆるめ'; tone='soft'; summary='リラックスフィット寄り。ゆとりが好みなら◎'; }
+  else if (score >= 70 && tightCount > looseCount) { label='少しタイト'; tone='soft'; summary='細身寄り。試着できると安心。'; }
+  else if (score >= 50 && looseCount > tightCount) { label='ゆるい'; tone='warn'; summary='オーバーサイズ寄り。シルエットが大きく変わります。'; }
+  else if (score >= 50 && tightCount > looseCount) { label='タイト'; tone='warn'; summary='締め付け感が出やすいサイズ感です。'; }
+  else { label='サイズ差大'; tone='bad'; summary='ジャストとは別物のシルエットになります。'; }
+  return { label, score, summary, tone, majorCount, looseCount, tightCount, valid:valid.length };
+}
+
+function calloutText(diff, axis) {
+  if (diff == null) return null;
+  const sign = diff > 0 ? '+' : '−';
+  const abs = Math.abs(diff).toFixed(diff % 1 === 0 ? 0 : 1);
+  let qual = '';
+  if (Math.abs(diff) < 1.2) qual = 'ジャスト';
+  else if (diff > 0 && Math.abs(diff) < 4) qual = 'ややゆとり';
+  else if (diff > 0) qual = 'ゆったり';
+  else if (Math.abs(diff) < 4) qual = 'ややタイト';
+  else qual = 'タイト';
+  return { headline:`${sign}${abs}cm`, qual };
+}
+
+window.fittoData = { CATEGORIES, DEFAULT_WARDROBE, SAMPLE_CANDIDATE_PANTS, TOLERANCE, estimateField, compareItem, verdict, calloutText };
+</script>
+
+<!-- ── llm (Gemini via google.script.run) ── -->
+<script type="text/babel">
+async function callLLM(prompt) {
+  return new Promise((resolve, reject) => {
+    if (typeof google === 'undefined' || !google.script) {
+      reject(new Error('google.script が利用できません。Google Apps Script 上で実行してください。'));
+      return;
+    }
+    google.script.run
+      .withSuccessHandler(resolve)
+      .withFailureHandler((e) => reject(new Error(e.message || 'AI呼び出しに失敗しました')))
+      .callGemini(prompt);
+  });
+}
+
+async function parseSizeTable(rawText, hintCategory = null) {
+  const fieldMap = {
+    pants:  ['waist','hip','thigh','rise','hem','inseam'],
+    tops:   ['shoulder','chest','length','sleeve','cuff','neck'],
+    outer:  ['shoulder','chest','length','sleeve','hem'],
+  };
+  const prompt = `あなたはアパレルECサイトのサイズ表を構造化するアシスタントです。
+以下のテキストから、商品の寸法を読み取り、JSONで返してください。
+
+【出力スキーマ】
+{
+  "category": "pants" | "tops" | "outer",
+  "sizes": [
+    {
+      "sizeLabel": "S, M, 46, F など",
+      "measures": {
+        // pants:  waist, hip, thigh, rise, hem, inseam
+        // tops:   shoulder, chest, length, sleeve, cuff, neck
+        // outer:  shoulder, chest, length, sleeve, hem
+        // 値は cm の数値のみ（単位記号なし）
+      },
+      "isRange": false
+    }
+  ],
+  "confidence": "high" | "medium" | "low",
+  "notes": "曖昧だった点や仮定があれば短く"
+}
+
+【マッピングのルール】
+- pants:
+  - 「ウエスト」「胴回り」「ウェスト」→ waist
+  - 「ヒップ」「腰回り」→ hip
+  - 「もも幅」「わたり幅」「腿幅」「ワタリ」→ thigh
+  - 「もも周り」など周径表記 → ÷2 して thigh（notesに明記）
+  - 「股上」「ライズ」→ rise
+  - 「股下」「インシーム」→ inseam
+  - 「裾幅」「すそ幅」→ hem
+  - 「裾周り」など周径表記 → ÷2 して hem（notesに明記）
+  - 「ヒザ幅」「膝幅」→ 無視
+- tops/outer: 「肩幅」→ shoulder, 「身幅」→ chest, 「着丈」→ length, 「袖丈」→ sleeve, 「袖口」→ cuff, 「首回り」→ neck
+- 単位がinch表記の場合は cm に換算（1 inch = 2.54 cm）
+- サイズ表記が複数ある場合は全部 sizes 配列に入れる
+- 範囲表記は中央値を採用し isRange: true
+${hintCategory ? `- ヒント: ユーザーは現在「${hintCategory}」カテゴリを選んでいます。` : ''}
+
+【入力テキスト】
+${rawText}
+
+JSONのみを返してください。前後の説明文は不要です。`;
+
+  let text = await callLLM(prompt);
+  text = String(text).trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim();
+  let parsed;
+  try { parsed = JSON.parse(text); }
+  catch (e) {
+    const m = text.match(/\{[\s\S]*\}/);
+    if (m) { try { parsed = JSON.parse(m[0]); } catch { throw new Error('JSON parse failed'); } }
+    else throw new Error('No JSON found in response');
+  }
+  const cat = ['pants','tops','outer'].includes(parsed.category) ? parsed.category : (hintCategory || 'pants');
+  const allowed = fieldMap[cat] || [];
+  let rawSizes = Array.isArray(parsed.sizes) ? parsed.sizes : null;
+  if (!rawSizes && parsed.measures) rawSizes = [{ sizeLabel:parsed.sizeLabel, measures:parsed.measures, isRange:false }];
+  rawSizes = rawSizes || [];
+  const sizes = rawSizes.map(s => {
+    const measures = {};
+    Object.entries(s.measures || {}).forEach(([k, v]) => {
+      if (allowed.includes(k)) { const num = typeof v === 'number' ? v : parseFloat(v); if (!isNaN(num)) measures[k] = +num.toFixed(1); }
+    });
+    return { sizeLabel: s.sizeLabel ? String(s.sizeLabel) : '', measures, isRange: !!s.isRange };
+  }).filter(s => Object.keys(s.measures).length > 0);
+  return { category:cat, sizes, confidence:['high','medium','low'].includes(parsed.confidence) ? parsed.confidence : 'medium', notes:parsed.notes ? String(parsed.notes) : undefined };
+}
+
+window.fittoLLM = { parseSizeTable };
+</script>
+
+<!-- ── figure ── -->
+<script type="text/babel">
+const { calloutText } = window.fittoData;
+
+function BodySilhouette({ stroke='#bdbab4', sw=1.2 }) {
+  return (
+    <g fill="none" stroke={stroke} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
+      <ellipse cx="100" cy="34" rx="18" ry="22" />
+      <path d="M92 56 L92 66 Q100 70 108 66 L108 56" />
+      <path d="M70 78 Q100 70 130 78 L138 96 Q142 130 138 168 L132 200 Q128 224 126 252 L122 290 L120 348 L114 354" />
+      <path d="M130 78 Q100 70 70 78 L62 96 Q58 130 62 168 L68 200 Q72 224 74 252 L78 290 L80 348 L86 354" />
+      <path d="M70 80 Q44 130 38 184 Q36 198 38 208 L48 210" />
+      <path d="M130 80 Q156 130 162 184 Q164 198 162 208 L152 210" />
+      <path d="M100 200 L100 348" strokeDasharray="2 4" opacity="0.5" />
+      <path d="M82 354 L86 354 L86 358 L78 358 Z" fill={stroke} stroke="none" opacity="0.5" />
+      <path d="M118 354 L114 354 L114 358 L122 358 Z" fill={stroke} stroke="none" opacity="0.5" />
+    </g>
+  );
+}
+
+function PantsOverlay({ accent='#1c1c1c', highlight='#6b7c5a' }) {
+  return (
+    <g fill="none" stroke={accent} strokeWidth="1.4" strokeLinejoin="round">
+      <path d="M70 168 Q100 162 130 168 L132 174 Q100 170 68 174 Z" fill="#f6f4ee" stroke={accent} />
+      <path d="M68 174 L62 250 L60 320 L56 352 L80 354 L88 320 L94 260 L100 200 L106 260 L112 320 L120 354 L144 352 L140 320 L138 250 L132 174 Z" fill="#fbfaf6" stroke={accent} />
+      <path d="M70 170 Q100 165 130 170" stroke={highlight} strokeWidth="1.6" />
+      <path d="M64 196 Q100 190 136 196" stroke={highlight} strokeWidth="1.6" />
+      <path d="M56 352 L80 354" stroke={highlight} strokeWidth="1.6" />
+      <path d="M120 354 L144 352" stroke={highlight} strokeWidth="1.6" />
+    </g>
+  );
+}
+
+function TopsOverlay({ accent='#1c1c1c', highlight='#6b7c5a' }) {
+  return (
+    <g fill="none" stroke={accent} strokeWidth="1.4" strokeLinejoin="round">
+      <path d="M64 78 Q100 70 136 78 L156 96 L162 130 L154 144 L142 132 L142 220 Q100 226 58 220 L58 132 L46 144 L38 130 L44 96 Z" fill="#fbfaf6" stroke={accent} />
+      <path d="M88 76 Q100 84 112 76" stroke={accent} />
+      <path d="M64 80 Q100 72 136 80" stroke={highlight} strokeWidth="1.6" />
+      <path d="M58 132 Q100 126 142 132" stroke={highlight} strokeWidth="1.6" />
+      <path d="M152 138 L160 132" stroke={highlight} strokeWidth="1.6" />
+    </g>
+  );
+}
+
+function OuterOverlay({ accent='#1c1c1c', highlight='#6b7c5a' }) {
+  return (
+    <g fill="none" stroke={accent} strokeWidth="1.4" strokeLinejoin="round">
+      <path d="M62 78 Q100 70 138 78 L160 100 L172 200 L160 220 L148 200 L148 280 L140 290 L100 290 L60 290 L52 280 L52 200 L40 220 L28 200 L40 100 Z" fill="#fbfaf6" stroke={accent} />
+      <path d="M100 76 L100 290" stroke={accent} strokeDasharray="2 3" opacity="0.5" />
+      <path d="M62 80 Q100 72 138 80" stroke={highlight} strokeWidth="1.6" />
+      <path d="M52 200 L148 200" stroke={highlight} strokeWidth="1.6" />
+      <path d="M60 290 L140 290" stroke={highlight} strokeWidth="1.6" />
+    </g>
+  );
+}
+
+function Callout({ x, y, ax, ay, headline, qual, side='left', tone='fit' }) {
+  const toneColor = { fit:'#1c1c1c', loose:'#6b7c5a', tight:'#b86a4a', major:'#b86a4a' }[tone] || '#1c1c1c';
+  const w = 96, h = qual ? 44 : 28;
+  const px = side === 'left' ? x - w - 18 : x + 18;
+  const py = y - h / 2;
+  return (
+    <g>
+      <line x1={ax} y1={ay} x2={x} y2={y} stroke="#9c9893" strokeWidth="0.8" strokeDasharray="1.5 2" />
+      <circle cx={ax} cy={ay} r="2.4" fill="#6b7c5a" />
+      <g transform={`translate(${px} ${py})`}>
+        <rect x="0" y="0" width={w} height={h} rx="3" fill="#ffffff" stroke="#cdcac3" strokeWidth="0.8" />
+        <text x={w/2} y={qual ? 16 : 18} textAnchor="middle"
+              fontFamily='"Noto Sans JP",system-ui' fontSize="11" fontWeight="500" fill={toneColor}>{headline}</text>
+        {qual && <text x={w/2} y={32} textAnchor="middle"
+              fontFamily='"Noto Sans JP",system-ui' fontSize="10" fontWeight="400" fill="#4a4a4a">{qual}</text>}
+      </g>
+    </g>
+  );
+}
+
+const ANCHORS = {
+  pants: {
+    waist:  { ax:100, ay:170, x:38,  y:150, side:'left' },
+    hip:    { ax:100, ay:196, x:162, y:200, side:'right' },
+    thigh:  { ax:96,  ay:230, x:38,  y:244, side:'left' },
+    rise:   { ax:100, ay:184, x:162, y:158, side:'right' },
+    hem:    { ax:70,  ay:350, x:36,  y:326, side:'left' },
+    inseam: { ax:100, ay:280, x:162, y:296, side:'right' },
+  },
+  tops: {
+    shoulder: { ax:100, ay:78,  x:38,  y:60,  side:'left' },
+    chest:    { ax:100, ay:130, x:38,  y:138, side:'left' },
+    length:   { ax:100, ay:222, x:162, y:230, side:'right' },
+    sleeve:   { ax:152, ay:138, x:162, y:110, side:'right' },
+    cuff:     { ax:152, ay:144, x:162, y:168, side:'right' },
+    neck:     { ax:100, ay:76,  x:162, y:50,  side:'right' },
+  },
+  outer: {
+    shoulder: { ax:100, ay:78,  x:38,  y:60,  side:'left' },
+    chest:    { ax:100, ay:130, x:38,  y:130, side:'left' },
+    length:   { ax:100, ay:290, x:162, y:280, side:'right' },
+    sleeve:   { ax:168, ay:200, x:162, y:168, side:'right' },
+    hem:      { ax:100, ay:290, x:38,  y:250, side:'left' },
+  },
+};
+
+function FigureCompare({ category, rows=[], showLabels=true, height=360 }) {
+  const Overlay = category === 'tops' ? TopsOverlay : category === 'outer' ? OuterOverlay : PantsOverlay;
+  return (
+    <svg viewBox="0 0 200 380" width="100%" style={{ display:'block', maxHeight:height }}>
+      <BodySilhouette />
+      <Overlay />
+      {showLabels && rows.map((r) => {
+        if (r.diff == null) return null;
+        const a = ANCHORS[category]?.[r.key];
+        if (!a) return null;
+        const c = calloutText(r.diff, r.axis);
+        if (!c) return null;
+        const tol = window.fittoData.TOLERANCE[r.key] || { fit:2, loose:4, major:7 };
+        const abs = Math.abs(r.diff);
+        let tone = 'fit';
+        if (abs > tol.major) tone = 'major';
+        else if (abs > tol.fit) tone = r.diff > 0 ? 'loose' : 'tight';
+        return <Callout key={r.key} ax={a.ax} ay={a.ay} x={a.x} y={a.y} side={a.side}
+                        headline={c.headline} qual={c.qual} tone={tone} />;
+      })}
+    </svg>
+  );
+}
+
+function FigureSimple({ category, height=320, highlightField=null }) {
+  const Overlay = category === 'tops' ? TopsOverlay : category === 'outer' ? OuterOverlay : PantsOverlay;
+  return (
+    <svg viewBox="0 0 200 380" width="100%" style={{ display:'block', maxHeight:height }}>
+      <BodySilhouette />
+      <Overlay highlight={highlightField ? '#b86a4a' : '#6b7c5a'} />
+      {highlightField && ANCHORS[category]?.[highlightField] && (() => {
+        const a = ANCHORS[category][highlightField];
+        return (
+          <g>
+            <circle cx={a.ax} cy={a.ay} r="6" fill="none" stroke="#b86a4a" strokeWidth="1.4" />
+            <circle cx={a.ax} cy={a.ay} r="2.5" fill="#b86a4a" />
+          </g>
+        );
+      })()}
+    </svg>
+  );
+}
+
+window.fittoFigure = { FigureCompare, FigureSimple };
+</script>
+
+<!-- ── screens-home ── -->
+<script type="text/babel">
+const { CATEGORIES } = window.fittoData;
+
+function Chrome({ title, leading, trailing, children, scroll=true }) {
+  return (
+    <div style={{ display:'flex', flexDirection:'column', width:'100%', height:'100%', background:'#faf8f4' }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 18px 10px', minHeight:44 }}>
+        <div style={{ minWidth:64, display:'flex', alignItems:'center' }}>{leading}</div>
+        <div style={{ fontFamily:'"Cormorant Garamond","Noto Sans JP",serif', fontSize:18, fontWeight:500, letterSpacing:'0.02em', color:'#1c1c1c' }}>{title}</div>
+        <div style={{ minWidth:64, display:'flex', alignItems:'center', justifyContent:'flex-end' }}>{trailing}</div>
+      </div>
+      <div style={{ flex:1, overflowY:scroll?'auto':'hidden', WebkitOverflowScrolling:'touch' }}>{children}</div>
+    </div>
+  );
+}
+
+function NavBtn({ children, onClick, ghost=false }) {
+  return (
+    <button onClick={onClick} style={{ appearance:'none', border:'none', background:'transparent',
+      padding:'6px 0', color:ghost?'#8a8a8a':'#1c1c1c', fontSize:13, fontWeight:400,
+      letterSpacing:'0.02em', fontFamily:'inherit', cursor:'pointer' }}>{children}</button>
+  );
+}
+
+function PrimaryBtn({ children, onClick, disabled=false, full=true }) {
+  return (
+    <button onClick={onClick} disabled={disabled} style={{ appearance:'none', border:'none',
+      background:disabled?'#cdcac3':'#1c1c1c', color:'#faf8f4', padding:'14px 22px',
+      width:full?'100%':'auto', borderRadius:2, fontSize:14, fontWeight:500,
+      letterSpacing:'0.06em', fontFamily:'inherit', cursor:disabled?'default':'pointer', textAlign:'center' }}>{children}</button>
+  );
+}
+
+function GhostBtn({ children, onClick, full=true }) {
+  return (
+    <button onClick={onClick} style={{ appearance:'none', background:'transparent',
+      color:'#1c1c1c', padding:'14px 22px', width:full?'100%':'auto',
+      border:'1px solid #d8d6d2', borderRadius:2, fontSize:13, fontWeight:500,
+      letterSpacing:'0.06em', fontFamily:'inherit', cursor:'pointer' }}>{children}</button>
+  );
+}
+
+function SectionTitle({ kicker, children, action }) {
+  return (
+    <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', padding:'20px 22px 10px' }}>
+      <div>
+        {kicker && <div style={{ fontSize:10, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase', marginBottom:4 }}>{kicker}</div>}
+        <div style={{ fontFamily:'"Cormorant Garamond","Noto Sans JP",serif', fontSize:22, fontWeight:500, letterSpacing:'0.01em', color:'#1c1c1c' }}>{children}</div>
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function CategoryGlyph({ category, size=32, color='#1c1c1c' }) {
+  const sw = 1.2;
+  if (category === 'pants') return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <path d="M9 6 L23 6 L24 14 L21 28 L18 28 L16 16 L14 28 L11 28 L8 14 Z" stroke={color} strokeWidth={sw} strokeLinejoin="round" />
+      <line x1="9" y1="9" x2="23" y2="9" stroke={color} strokeWidth={sw} />
+    </svg>
+  );
+  if (category === 'tops') return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <path d="M11 7 Q16 5 21 7 L26 11 L24 14 L22 13 L22 26 L10 26 L10 13 L8 14 L6 11 Z" stroke={color} strokeWidth={sw} strokeLinejoin="round" />
+      <path d="M13 6 Q16 9 19 6" stroke={color} strokeWidth={sw} fill="none" />
+    </svg>
+  );
+  if (category === 'outer') return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <path d="M10 6 L22 6 L27 10 L26 18 L23 17 L23 28 L9 28 L9 17 L6 18 L5 10 Z" stroke={color} strokeWidth={sw} strokeLinejoin="round" />
+      <line x1="16" y1="6" x2="16" y2="28" stroke={color} strokeWidth={sw} strokeDasharray="1.5 2" />
+    </svg>
+  );
+  return null;
+}
+
+function VerdictPill({ tone, small=false, children }) {
+  const palette = {
+    ok:{ bg:'#1c1c1c', fg:'#faf8f4', border:'#1c1c1c' },
+    soft:{ bg:'#f3f0ea', fg:'#1c1c1c', border:'#cdcac3' },
+    warn:{ bg:'#fbf3ee', fg:'#b86a4a', border:'#e8c7b6' },
+    bad:{ bg:'#1c1c1c', fg:'#e8a48a', border:'#1c1c1c' },
+    neutral:{ bg:'#f3f0ea', fg:'#8a8a8a', border:'#e8e6e2' }
+  }[tone] || { bg:'#f3f0ea', fg:'#1c1c1c', border:'#cdcac3' };
+  return (
+    <span style={{ display:'inline-flex', alignItems:'center',
+      padding:small?'3px 10px':'6px 14px',
+      background:palette.bg, color:palette.fg, border:`1px solid ${palette.border}`,
+      borderRadius:999, fontSize:small?10:11, fontWeight:500, letterSpacing:'0.06em', whiteSpace:'nowrap' }}>{children}</span>
+  );
+}
+
+function HomeScreen({ wardrobe, history, onCompare, onSetup, onItem }) {
+  const counts = {
+    pants: wardrobe.filter(w => w.category==='pants').length,
+    tops:  wardrobe.filter(w => w.category==='tops').length,
+    outer: wardrobe.filter(w => w.category==='outer').length,
+  };
+  return (
+    <Chrome title="fitto" leading={<NavBtn ghost>―</NavBtn>} trailing={<NavBtn onClick={onSetup}>設定</NavBtn>}>
+      <div style={{ padding:'4px 22px 24px' }}>
+        <div style={{ fontSize:12, lineHeight:1.7, color:'#4a4a4a', marginBottom:22 }}>
+          ジャストサイズと比べて、本当にちょうどいいかを判定します。
+        </div>
+        <PrimaryBtn onClick={onCompare}>サイズを比較する</PrimaryBtn>
+      </div>
+
+      <SectionTitle kicker="Just size" action={<NavBtn ghost onClick={onSetup}>すべて</NavBtn>}>ジャストの基準</SectionTitle>
+      <div style={{ padding:'0 22px 8px', display:'flex', flexDirection:'column', gap:10 }}>
+        {wardrobe.filter(w => w.primary).map(w => (
+          <button key={w.id} onClick={() => onItem(w)} style={{ appearance:'none', textAlign:'left',
+            display:'flex', alignItems:'center', gap:14, padding:'14px 14px', background:'#ffffff',
+            border:'1px solid #e8e6e2', borderRadius:2, cursor:'pointer', fontFamily:'inherit' }}>
+            <div style={{ width:48, height:48, background:'#f3f0ea', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              <CategoryGlyph category={w.category} size={28} />
+            </div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:13, fontWeight:500, color:'#1c1c1c', marginBottom:2 }}>{w.name}</div>
+              <div style={{ fontSize:11, color:'#8a8a8a', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{w.brand} · size {w.sizeLabel}</div>
+            </div>
+            <div style={{ fontSize:18, color:'#cdcac3', marginLeft:8 }}>›</div>
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:1, margin:'14px 22px 4px', background:'#e8e6e2', border:'1px solid #e8e6e2' }}>
+        {Object.values(CATEGORIES).map(c => (
+          <div key={c.id} style={{ background:'#faf8f4', padding:'14px 8px', textAlign:'center' }}>
+            <CategoryGlyph category={c.id} size={26} color="#4a4a4a" />
+            <div style={{ fontSize:10, letterSpacing:'0.12em', color:'#8a8a8a', marginTop:4 }}>{c.label.toUpperCase()}</div>
+            <div style={{ fontSize:18, fontWeight:500, marginTop:2, color:'#1c1c1c', fontFamily:'"Cormorant Garamond",serif' }}>
+              {counts[c.id]}<span style={{ fontSize:11, color:'#8a8a8a', marginLeft:2 }}>着</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <SectionTitle kicker="History" action={history.length > 0 ? <NavBtn ghost>すべて</NavBtn> : null}>最近の比較</SectionTitle>
+      <div style={{ padding:'0 22px 28px', display:'flex', flexDirection:'column', gap:8 }}>
+        {history.length === 0 && <div style={{ fontSize:12, color:'#8a8a8a', padding:'8px 0', lineHeight:1.7 }}>まだ比較した服はありません。</div>}
+        {history.slice(0,4).map(h => (
+          <div key={h.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 0', borderBottom:'1px solid #ececec' }}>
+            <div style={{ width:36, height:36, background:'#f3f0ea', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <CategoryGlyph category={h.category} size={22} color="#4a4a4a" />
+            </div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:12, fontWeight:500, color:'#1c1c1c' }}>{h.brand} — {h.product}</div>
+              <div style={{ fontSize:10, color:'#8a8a8a' }}>{h.date} · 基準: {h.baseName}</div>
+            </div>
+            <VerdictPill tone={h.tone} small>{h.label}</VerdictPill>
+          </div>
+        ))}
+      </div>
+    </Chrome>
+  );
+}
+
+window.fittoUI = { Chrome, NavBtn, PrimaryBtn, GhostBtn, SectionTitle, CategoryGlyph, VerdictPill };
+window.fittoScreens = window.fittoScreens || {};
+window.fittoScreens.HomeScreen = HomeScreen;
+</script>
+
+<!-- ── screens-setup ── -->
+<script type="text/babel">
+function FieldLabel({ children, padded=false }) {
+  return (
+    <div style={{ fontSize:10, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase',
+      margin: padded ? '14px 22px 8px' : '12px 0 6px' }}>{children}</div>
+  );
+}
+
+function TextField({ label, value, onChange, placeholder }) {
+  return (
+    <div style={{ marginBottom:14 }}>
+      <FieldLabel>{label}</FieldLabel>
+      <input type="text" value={value||''} placeholder={placeholder} onChange={(e) => onChange(e.target.value)}
+        style={{ width:'100%', border:'none', borderBottom:'1px solid #d8d6d2', background:'transparent',
+          padding:'8px 2px', fontSize:14, fontFamily:'inherit', color:'#1c1c1c', outline:'none' }} />
+    </div>
+  );
+}
+
+function SetupListScreen({ wardrobe, onBack, onAdd, onEdit, onTogglePrimary }) {
+  const { Chrome, NavBtn, PrimaryBtn, CategoryGlyph } = window.fittoUI;
+  const groups = ['pants','tops','outer'].map(cat => ({ cat, items: wardrobe.filter(w => w.category === cat) }));
+
+  return (
+    <Chrome title="ジャストサイズ" leading={<NavBtn onClick={onBack}>‹ 戻る</NavBtn>} trailing={<NavBtn onClick={onAdd}>＋ 追加</NavBtn>}>
+      <div style={{ padding:'4px 22px 12px' }}>
+        <div style={{ fontSize:12, lineHeight:1.7, color:'#4a4a4a' }}>
+          基準にする一着を、カテゴリごとに登録しておきます。<br/>★印が比較時のデフォルト基準です。
+        </div>
+      </div>
+
+      {groups.map(g => (
+        <div key={g.cat}>
+          <div style={{ display:'flex', alignItems:'center', gap:10, padding:'20px 22px 8px' }}>
+            <CategoryGlyph category={g.cat} size={20} color="#8a8a8a" />
+            <div style={{ fontSize:11, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase' }}>{CATEGORIES[g.cat].labelEn}</div>
+            <div style={{ flex:1, height:1, background:'#e8e6e2' }} />
+          </div>
+          <div style={{ padding:'0 22px', display:'flex', flexDirection:'column', gap:8 }}>
+            {g.items.map(w => (
+              <div key={w.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 14px',
+                background:'#ffffff', border:'1px solid #e8e6e2', borderRadius:2 }}>
+                <button onClick={() => onTogglePrimary(w.id)} style={{ appearance:'none', border:'none',
+                  background:'transparent', width:24, height:24, cursor:'pointer', padding:0,
+                  color:w.primary?'#1c1c1c':'#cdcac3', fontSize:14 }}>{w.primary?'★':'☆'}</button>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:13, fontWeight:500, color:'#1c1c1c' }}>{w.name}</div>
+                  <div style={{ fontSize:10, color:'#8a8a8a' }}>{w.brand} · size {w.sizeLabel}</div>
+                </div>
+                <button onClick={() => onEdit(w)} style={{ appearance:'none', border:'none', background:'transparent',
+                  fontSize:11, color:'#4a4a4a', cursor:'pointer', fontFamily:'inherit', padding:'4px 8px' }}>編集</button>
+              </div>
+            ))}
+            {g.items.length === 0 && (
+              <div style={{ padding:'14px', border:'1px dashed #d8d6d2', borderRadius:2, fontSize:12, color:'#8a8a8a', textAlign:'center' }}>未登録</div>
+            )}
+          </div>
+        </div>
+      ))}
+
+      <div style={{ padding:'24px 22px 28px' }}>
+        <PrimaryBtn onClick={onAdd}>＋ 新しく登録する</PrimaryBtn>
+      </div>
+    </Chrome>
+  );
+}
+
+function SetupEditScreen({ initial, onBack, onSave }) {
+  const { Chrome, NavBtn, PrimaryBtn } = window.fittoUI;
+  const { FigureSimple } = window.fittoFigure;
+  const isNew = !initial?.id;
+  const [draft, setDraft] = React.useState(() => initial || {
+    id: 'w' + Date.now(), category:'pants', name:'', brand:'', sizeLabel:'', primary:false, measures:{}, note:'',
+  });
+  const [focusedField, setFocusedField] = React.useState(null);
+  const cat = CATEGORIES[draft.category];
+  const update = (patch) => setDraft(d => ({ ...d, ...patch }));
+  const updateMeasure = (k, v) => {
+    const num = v === '' ? undefined : parseFloat(v);
+    setDraft(d => ({ ...d, measures: { ...d.measures, [k]: isNaN(num) ? undefined : num } }));
+  };
+
+  return (
+    <Chrome title={isNew?'新規登録':'編集'} leading={<NavBtn onClick={onBack}>‹ 戻る</NavBtn>} trailing={<NavBtn onClick={() => onSave(draft)}>保存</NavBtn>}>
+      <div style={{ padding:'8px 22px 18px' }}>
+        <FieldLabel>カテゴリ</FieldLabel>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:1, background:'#e8e6e2', border:'1px solid #e8e6e2' }}>
+          {Object.values(CATEGORIES).map(c => {
+            const sel = draft.category === c.id;
+            return (
+              <button key={c.id} onClick={() => update({ category:c.id, measures:{} })} style={{ appearance:'none', border:'none', cursor:'pointer',
+                padding:'14px 8px', background:sel?'#1c1c1c':'#faf8f4', color:sel?'#faf8f4':'#1c1c1c',
+                fontFamily:'inherit', display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
+                <window.fittoUI.CategoryGlyph category={c.id} size={24} color={sel?'#faf8f4':'#1c1c1c'} />
+                <span style={{ fontSize:11, letterSpacing:'0.06em' }}>{c.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ margin:'0 22px 14px', padding:'12px', background:'#fbfaf6', border:'1px solid #ececec', display:'flex', alignItems:'center', gap:10 }}>
+        <div style={{ width:110, flexShrink:0 }}>
+          <FigureSimple category={draft.category} highlightField={focusedField} height={170} />
+        </div>
+        <div style={{ flex:1, fontSize:11, lineHeight:1.7, color:'#4a4a4a' }}>
+          {focusedField ? (
+            <>
+              <div style={{ fontSize:10, letterSpacing:'0.16em', color:'#b86a4a', marginBottom:4 }}>MEASURING</div>
+              <div style={{ fontFamily:'"Cormorant Garamond",serif', fontSize:18, color:'#1c1c1c' }}>{cat.fields.find(f => f.key === focusedField)?.ja}</div>
+              <div style={{ fontSize:11, color:'#8a8a8a', marginTop:4 }}>平置きで測ったサイズを入力してください。</div>
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize:10, letterSpacing:'0.16em', color:'#8a8a8a', marginBottom:4 }}>{cat.labelEn.toUpperCase()}</div>
+              <div style={{ fontFamily:'"Cormorant Garamond",serif', fontSize:18, color:'#1c1c1c' }}>{cat.label}の寸法</div>
+              <div style={{ fontSize:11, color:'#8a8a8a', marginTop:4 }}>数値の入力欄をタップすると、図の位置がハイライトされます。</div>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div style={{ padding:'0 22px 4px' }}>
+        <TextField label="呼び名" placeholder="例：ジャストパンツ" value={draft.name} onChange={v => update({ name:v })} />
+        <TextField label="ブランド・型番" placeholder="例：A.P.C. Petit Standard" value={draft.brand} onChange={v => update({ brand:v })} />
+        <TextField label="サイズ表記" placeholder="例：31, M, 4" value={draft.sizeLabel} onChange={v => update({ sizeLabel:v })} />
+      </div>
+
+      <FieldLabel padded>寸法（cm）</FieldLabel>
+      <div style={{ margin:'0 22px 16px', border:'1px solid #ececec', background:'#ffffff' }}>
+        {cat.fields.map((f, i) => (
+          <div key={f.key} style={{ display:'flex', alignItems:'center', padding:'12px 14px',
+            borderBottom: i < cat.fields.length - 1 ? '1px solid #f0eee9' : 'none',
+            background: focusedField === f.key ? '#fbf6f0' : '#ffffff', transition:'background 120ms ease' }}>
+            <div style={{ width:22, height:22, borderRadius:'50%', border:'1px solid #d8d6d2',
+              display:'flex', alignItems:'center', justifyContent:'center',
+              fontSize:9, color:'#8a8a8a', marginRight:12, fontFamily:'"Cormorant Garamond",serif' }}>{f.short}</div>
+            <div style={{ flex:1, fontSize:13, color:'#1c1c1c' }}>{f.ja}</div>
+            <input type="number" inputMode="decimal" step="0.5"
+              value={draft.measures?.[f.key] ?? ''} placeholder="—"
+              onChange={(e) => updateMeasure(f.key, e.target.value)}
+              onFocus={() => setFocusedField(f.key)} onBlur={() => setFocusedField(null)}
+              style={{ width:72, textAlign:'right', border:'none', borderBottom:'1px solid #d8d6d2',
+                background:'transparent', padding:'4px 4px', fontSize:14, fontFamily:'inherit',
+                fontVariantNumeric:'tabular-nums', outline:'none' }} />
+            <div style={{ width:22, fontSize:11, color:'#8a8a8a', textAlign:'right' }}>cm</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ padding:'0 22px' }}>
+        <FieldLabel>メモ（任意）</FieldLabel>
+        <textarea value={draft.note||''} onChange={(e) => update({ note:e.target.value })}
+          placeholder="例：休日用にゆとりあり"
+          style={{ width:'100%', minHeight:60, padding:'10px 12px', border:'1px solid #e8e6e2',
+            borderRadius:2, fontSize:12, fontFamily:'inherit', color:'#1c1c1c',
+            background:'#ffffff', resize:'none', outline:'none' }} />
+      </div>
+
+      <div style={{ padding:'14px 22px 8px' }}>
+        <label style={{ display:'flex', alignItems:'center', gap:10, fontSize:12, color:'#1c1c1c', cursor:'pointer' }}>
+          <input type="checkbox" checked={!!draft.primary} onChange={(e) => update({ primary:e.target.checked })}
+            style={{ accentColor:'#1c1c1c', width:16, height:16 }} />
+          このカテゴリの基準にする（★）
+        </label>
+      </div>
+      <div style={{ padding:'14px 22px 28px' }}>
+        <PrimaryBtn onClick={() => onSave(draft)}>保存する</PrimaryBtn>
+      </div>
+    </Chrome>
+  );
+}
+
+window.fittoUI.FieldLabel = FieldLabel;
+window.fittoUI.TextField = TextField;
+window.fittoScreens.SetupListScreen = SetupListScreen;
+window.fittoScreens.SetupEditScreen = SetupEditScreen;
+</script>
+
+<!-- ── screens-compare ── -->
+<script type="text/babel">
+function CompareInputScreen({ wardrobe, draft, setDraft, onBack, onCompute }) {
+  const { Chrome, NavBtn, PrimaryBtn, CategoryGlyph, FieldLabel, TextField } = window.fittoUI;
+  const { estimateField } = window.fittoData;
+  const [pasteOpen, setPasteOpen] = React.useState(false);
+  const [aiFilledKeys, setAiFilledKeys] = React.useState({});
+
+  const update = (patch) => setDraft({ ...draft, ...patch });
+  const updateMeasure = (k, v) => {
+    const num = v === '' ? undefined : parseFloat(v);
+    update({ measures: { ...draft.measures, [k]: isNaN(num) ? undefined : num } });
+    if (aiFilledKeys[k]) { const next = { ...aiFilledKeys }; delete next[k]; setAiFilledKeys(next); }
+  };
+
+  const onAIResult = (result, selectedSize) => {
+    let nextDraft = { ...draft };
+    if (result.category && result.category !== draft.category) { nextDraft.category = result.category; nextDraft.measures = {}; }
+    nextDraft.measures = { ...(nextDraft.measures || {}), ...selectedSize.measures };
+    if (selectedSize.sizeLabel) nextDraft.sizeLabel = selectedSize.sizeLabel;
+    setDraft(nextDraft);
+    setAiFilledKeys(Object.fromEntries(Object.keys(selectedSize.measures).map(k => [k, true])));
+    setPasteOpen(false);
+  };
+
+  const cat = CATEGORIES[draft.category];
+  const bases = wardrobe.filter(w => w.category === draft.category).sort((a, b) => (b.primary?1:0) - (a.primary?1:0));
+  const baseId = draft.baseId || bases[0]?.id;
+
+  React.useEffect(() => {
+    if (!draft.baseId && bases[0]) update({ baseId: bases[0].id });
+  }, [draft.category]);
+
+  const suggestions = cat.fields
+    .filter(f => draft.measures?.[f.key] === undefined || draft.measures?.[f.key] === null)
+    .map(f => ({ ...f, estimate: estimateField(draft.category, f.key, draft.measures || {}) }))
+    .filter(s => s.estimate !== null);
+
+  const filledCount = cat.fields.filter(f => draft.measures?.[f.key] != null).length;
+  const canCompute = filledCount >= 2 && baseId;
+
+  return (
+    <>
+    <Chrome title="サイズを入力" leading={<NavBtn onClick={onBack}>‹ 戻る</NavBtn>}
+      trailing={<NavBtn ghost onClick={() => update({ measures:{}, brand:'', sizeLabel:'' })}>クリア</NavBtn>}>
+      <div style={{ padding:'8px 22px 16px' }}>
+        <FieldLabel>欲しい服</FieldLabel>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:1, background:'#e8e6e2', border:'1px solid #e8e6e2', marginBottom:16 }}>
+          {Object.values(CATEGORIES).map(c => {
+            const sel = draft.category === c.id;
+            return (
+              <button key={c.id} onClick={() => update({ category:c.id, measures:{}, baseId:null })} style={{ appearance:'none', border:'none', cursor:'pointer',
+                padding:'14px 8px', background:sel?'#1c1c1c':'#faf8f4', color:sel?'#faf8f4':'#1c1c1c',
+                fontFamily:'inherit', display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
+                <CategoryGlyph category={c.id} size={22} color={sel?'#faf8f4':'#1c1c1c'} />
+                <span style={{ fontSize:11, letterSpacing:'0.06em' }}>{c.label}</span>
+              </button>
+            );
+          })}
+        </div>
+        <TextField label="ブランド・商品名" placeholder="例：Lemaire — Twisted Pants" value={draft.brand||''} onChange={v => update({ brand:v })} />
+        <TextField label="サイズ表記" placeholder="例：46, M" value={draft.sizeLabel||''} onChange={v => update({ sizeLabel:v })} />
+
+        <button onClick={() => setPasteOpen(true)} style={{ appearance:'none', cursor:'pointer', fontFamily:'inherit',
+          width:'100%', padding:'12px 14px', marginTop:6, background:'#ffffff', border:'1px dashed #cdcac3',
+          borderRadius:2, color:'#1c1c1c', textAlign:'left', display:'flex', alignItems:'center', gap:10 }}>
+          <span style={{ width:22, height:22, borderRadius:'50%', background:'#1c1c1c', color:'#faf8f4',
+            display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontFamily:'"Cormorant Garamond",serif' }}>AI</span>
+          <span style={{ flex:1 }}>
+            <span style={{ display:'block', fontSize:12, fontWeight:500 }}>サイズ表を貼り付けて自動入力</span>
+            <span style={{ display:'block', fontSize:10, color:'#8a8a8a', marginTop:2 }}>ECサイトのサイズ表をコピペすると、項目を読み取ります</span>
+          </span>
+          <span style={{ fontSize:14, color:'#cdcac3' }}>›</span>
+        </button>
+      </div>
+
+      <div style={{ padding:'0 22px 16px' }}>
+        <FieldLabel>比べる相手（基準）</FieldLabel>
+        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+          {bases.length === 0 && <div style={{ padding:14, border:'1px dashed #d8d6d2', fontSize:12, color:'#8a8a8a', textAlign:'center' }}>このカテゴリの基準が未登録です。設定から登録してください。</div>}
+          {bases.map(b => {
+            const sel = baseId === b.id;
+            return (
+              <button key={b.id} onClick={() => update({ baseId:b.id })} style={{ appearance:'none', textAlign:'left',
+                display:'flex', alignItems:'center', gap:12, padding:'12px 14px', cursor:'pointer',
+                background:sel?'#1c1c1c':'#ffffff', color:sel?'#faf8f4':'#1c1c1c',
+                border:`1px solid ${sel?'#1c1c1c':'#e8e6e2'}`, fontFamily:'inherit' }}>
+                <span style={{ fontSize:12, opacity:sel?1:0.6 }}>{b.primary?'★':'·'}</span>
+                <span style={{ flex:1 }}>
+                  <span style={{ display:'block', fontSize:13, fontWeight:500 }}>{b.name}</span>
+                  <span style={{ display:'block', fontSize:10, color:sel?'rgba(250,248,244,0.7)':'#8a8a8a' }}>{b.brand} · size {b.sizeLabel}</span>
+                </span>
+                <span style={{ fontSize:16, opacity:0.5 }}>{sel?'●':'○'}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ padding:'0 22px 8px' }}>
+        <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', marginBottom:6 }}>
+          <FieldLabel>商品の寸法（cm）</FieldLabel>
+          <div style={{ fontSize:10, color:'#8a8a8a' }}>{filledCount}/{cat.fields.length} 入力済</div>
+        </div>
+        <div style={{ background:'#ffffff', border:'1px solid #ececec' }}>
+          {cat.fields.map((f, i) => {
+            const v = draft.measures?.[f.key];
+            const missing = v == null;
+            const est = missing ? estimateField(draft.category, f.key, draft.measures||{}) : null;
+            return (
+              <div key={f.key} style={{ display:'flex', alignItems:'center', padding:'12px 14px',
+                borderBottom: i < cat.fields.length - 1 ? '1px solid #f0eee9' : 'none' }}>
+                <div style={{ width:22, height:22, borderRadius:'50%', border:'1px solid #d8d6d2',
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  fontSize:9, color:'#8a8a8a', marginRight:12, fontFamily:'"Cormorant Garamond",serif' }}>{f.short}</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:13, color:'#1c1c1c', display:'flex', alignItems:'center', gap:6 }}>
+                    {f.ja}
+                    {aiFilledKeys[f.key] && (
+                      <span style={{ fontSize:9, letterSpacing:'0.1em', color:'#1c1c1c',
+                        border:'1px solid #1c1c1c', padding:'1px 5px', fontFamily:'"Cormorant Garamond",serif' }}>AI</span>
+                    )}
+                  </div>
+                  {missing && est != null && (
+                    <button onClick={() => updateMeasure(f.key, est)} style={{ appearance:'none', border:'none',
+                      background:'transparent', padding:'2px 0', marginTop:2, cursor:'pointer',
+                      fontSize:10, color:'#b86a4a', fontFamily:'inherit' }}>推定 {est}cm を使う ›</button>
+                  )}
+                </div>
+                <input type="number" inputMode="decimal" step="0.5" value={v??''} placeholder="—"
+                  onChange={(e) => updateMeasure(f.key, e.target.value)}
+                  style={{ width:72, textAlign:'right', border:'none', borderBottom:'1px solid #d8d6d2',
+                    background:'transparent', padding:'4px 4px', fontSize:14, fontFamily:'inherit',
+                    fontVariantNumeric:'tabular-nums', color:'#1c1c1c', outline:'none' }} />
+                <div style={{ width:22, fontSize:11, color:'#8a8a8a', textAlign:'right' }}>cm</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {suggestions.length > 0 && filledCount >= 2 && (
+        <div style={{ margin:'14px 22px 8px', padding:'14px', background:'#fbf6f0', border:'1px solid #f1e2d3' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
+            <span style={{ fontSize:14 }}>◇</span>
+            <div style={{ fontSize:11, letterSpacing:'0.16em', color:'#b86a4a', textTransform:'uppercase', fontWeight:500 }}>推定で補完できます</div>
+          </div>
+          <div style={{ fontSize:11, color:'#4a4a4a', lineHeight:1.7, marginBottom:10 }}>ECサイトに記載がない項目は、入力済の値から目安を推定できます。</div>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+            {suggestions.map(s => (
+              <button key={s.key} onClick={() => updateMeasure(s.key, s.estimate)} style={{ appearance:'none',
+                border:'1px solid #e8c7b6', background:'#ffffff', color:'#b86a4a',
+                padding:'6px 12px', fontSize:11, cursor:'pointer', borderRadius:999, fontFamily:'inherit' }}>
+                {s.ja} ≈ {s.estimate}cm
+              </button>
+            ))}
+            <button onClick={() => { const next={...(draft.measures||{})}; suggestions.forEach(s=>{ next[s.key]=s.estimate; }); update({ measures:next }); }}
+              style={{ appearance:'none', border:'none', background:'#1c1c1c', color:'#faf8f4',
+                padding:'6px 12px', fontSize:11, cursor:'pointer', borderRadius:999, fontFamily:'inherit' }}>すべて補完</button>
+          </div>
+        </div>
+      )}
+
+      <div style={{ padding:'14px 22px 28px' }}>
+        <PrimaryBtn onClick={onCompute} disabled={!canCompute}>このサイズで判定する</PrimaryBtn>
+      </div>
+    </Chrome>
+    {pasteOpen && (
+      <PasteSizeTableModal hintCategory={draft.category} onClose={() => setPasteOpen(false)} onResult={onAIResult} />
+    )}
+    </>
+  );
+}
+
+function PasteSizeTableModal({ hintCategory, onClose, onResult }) {
+  const [text, setText] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState(null);
+  const [preview, setPreview] = React.useState(null);
+  const [selectedIdx, setSelectedIdx] = React.useState(0);
+
+  const onParse = async () => {
+    if (!text.trim()) return;
+    setLoading(true); setError(null); setPreview(null);
+    try {
+      const result = await window.fittoLLM.parseSizeTable(text, hintCategory);
+      setPreview(result); setSelectedIdx(0);
+    } catch (e) { setError(e.message || '読み取りに失敗しました'); }
+    finally { setLoading(false); }
+  };
+
+  const fieldJa = { waist:'ウエスト', hip:'ヒップ', thigh:'もも幅', rise:'股上', hem:'裾幅', inseam:'股下',
+    shoulder:'肩幅', chest:'身幅', length:'着丈', sleeve:'袖丈', cuff:'袖口', neck:'首回り' };
+  const catLabel = { pants:'ボトムス', tops:'トップス', outer:'アウター' };
+  const selected = preview?.sizes?.[selectedIdx];
+
+  return (
+    <div style={{ position:'absolute', inset:0, zIndex:100, background:'rgba(28,28,28,0.45)',
+      display:'flex', alignItems:'flex-end', justifyContent:'center' }}>
+      <div style={{ width:'100%', background:'#faf8f4', borderTopLeftRadius:16, borderTopRightRadius:16,
+        padding:'14px 18px 22px', maxHeight:'92%', overflowY:'auto' }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            <span style={{ width:22, height:22, borderRadius:'50%', background:'#1c1c1c', color:'#faf8f4',
+              display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontFamily:'"Cormorant Garamond",serif' }}>AI</span>
+            <div style={{ fontFamily:'"Cormorant Garamond","Noto Sans JP",serif', fontSize:18, fontWeight:500, color:'#1c1c1c' }}>サイズ表を貼り付け</div>
+          </div>
+          <button onClick={onClose} style={{ appearance:'none', border:'none', background:'transparent', fontSize:13, color:'#8a8a8a', cursor:'pointer', padding:4 }}>閉じる</button>
+        </div>
+        <div style={{ fontSize:11, color:'#4a4a4a', lineHeight:1.7, marginBottom:10 }}>ECサイトのサイズ表をペーストしてください。項目名と数値を読み取って自動で入力します。</div>
+        <textarea value={text} onChange={(e) => setText(e.target.value)}
+          placeholder={'例：\nサイズ  ウエスト  ヒップ  股上  股下  もも幅  裾幅\nS      78      101    26    60    29    15.5'}
+          style={{ width:'100%', minHeight:140, padding:'10px 12px', border:'1px solid #e8e6e2', borderRadius:2,
+            fontSize:12, fontFamily:'ui-monospace,"SF Mono",Menlo,monospace', color:'#1c1c1c',
+            background:'#ffffff', resize:'vertical', outline:'none', boxSizing:'border-box' }} />
+        {error && <div style={{ marginTop:10, padding:'10px 12px', background:'#fbf3ee', border:'1px solid #e8c7b6', color:'#b86a4a', fontSize:11, lineHeight:1.6 }}>{error}</div>}
+        {preview && (
+          <div style={{ marginTop:12, padding:'12px 14px', background:'#ffffff', border:'1px solid #ececec' }}>
+            <div style={{ display:'flex', gap:8, alignItems:'baseline', marginBottom:8 }}>
+              <div style={{ fontSize:10, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase' }}>読み取り結果</div>
+              <div style={{ flex:1, height:1, background:'#e8e6e2' }} />
+              <div style={{ fontSize:10, color:'#8a8a8a' }}>信頼度: {preview.confidence}</div>
+            </div>
+            <div style={{ fontSize:12, color:'#1c1c1c', marginBottom:10 }}><span style={{ color:'#8a8a8a' }}>カテゴリ: </span>{catLabel[preview.category]}</div>
+            {preview.sizes.length > 1 && (
+              <div style={{ marginBottom:10 }}>
+                <div style={{ fontSize:10, letterSpacing:'0.16em', color:'#8a8a8a', textTransform:'uppercase', marginBottom:6 }}>使うサイズを選択</div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                  {preview.sizes.map((s, i) => {
+                    const sel = selectedIdx === i;
+                    return (
+                      <button key={i} onClick={() => setSelectedIdx(i)} style={{ appearance:'none', cursor:'pointer', fontFamily:'inherit',
+                        padding:'6px 14px', fontSize:12, fontWeight:500,
+                        background:sel?'#1c1c1c':'#ffffff', color:sel?'#faf8f4':'#1c1c1c',
+                        border:`1px solid ${sel?'#1c1c1c':'#d8d6d2'}`, borderRadius:999 }}>
+                        {s.sizeLabel||`#${i+1}`}{s.isRange&&<span style={{ marginLeft:4, opacity:0.6, fontSize:10 }}>±</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {selected && (
+              <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:10 }}>
+                {Object.entries(selected.measures).map(([k, v]) => (
+                  <span key={k} style={{ fontSize:11, padding:'4px 10px', background:'#f3f0ea', color:'#1c1c1c', borderRadius:999, fontVariantNumeric:'tabular-nums' }}>
+                    {fieldJa[k]||k} {v}cm
+                  </span>
+                ))}
+                {Object.keys(selected.measures).length === 0 && <span style={{ fontSize:11, color:'#b86a4a' }}>項目を読み取れませんでした</span>}
+              </div>
+            )}
+            {preview.notes && <div style={{ fontSize:10, color:'#8a8a8a', lineHeight:1.6 }}>※ {preview.notes}</div>}
+          </div>
+        )}
+        <div style={{ display:'flex', gap:10, marginTop:14 }}>
+          <button onClick={onClose} style={{ appearance:'none', cursor:'pointer', flex:1, background:'transparent',
+            color:'#1c1c1c', border:'1px solid #d8d6d2', borderRadius:2, padding:'12px 16px', fontSize:13, fontFamily:'inherit' }}>キャンセル</button>
+          {!preview ? (
+            <button onClick={onParse} disabled={loading||!text.trim()} style={{ appearance:'none', cursor:loading?'default':'pointer', flex:2,
+              background:loading||!text.trim()?'#cdcac3':'#1c1c1c', color:'#faf8f4', border:'none', borderRadius:2,
+              padding:'12px 16px', fontSize:13, fontWeight:500, letterSpacing:'0.06em', fontFamily:'inherit' }}>
+              {loading?'読み取り中…':'AIで読み取る'}
+            </button>
+          ) : (
+            <button onClick={() => onResult(preview, selected)}
+              disabled={!selected||Object.keys(selected.measures).length===0} style={{ appearance:'none', cursor:'pointer', flex:2,
+              background:!selected||Object.keys(selected.measures).length===0?'#cdcac3':'#1c1c1c',
+              color:'#faf8f4', border:'none', borderRadius:2, padding:'12px 16px', fontSize:13, fontWeight:500,
+              letterSpacing:'0.06em', fontFamily:'inherit' }}>このサイズで入力する</button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+window.fittoScreens.CompareInputScreen = CompareInputScreen;
+</script>
+
+<!-- ── screens-result ── -->
+<script type="text/babel">
+function ResultScreen({ base, candidate, judgementUI, showLabels, onBack, onSave, onChangeBase }) {
+  const { Chrome, NavBtn, PrimaryBtn, GhostBtn, VerdictPill } = window.fittoUI;
+  const { compareItem, verdict, TOLERANCE } = window.fittoData;
+  const { FigureCompare } = window.fittoFigure;
+  const cat = CATEGORIES[candidate.category];
+  const rows = compareItem(base, candidate);
+  const v = verdict(rows);
+
+  return (
+    <Chrome title="比較結果" leading={<NavBtn onClick={onBack}>‹ 戻る</NavBtn>} trailing={<NavBtn ghost onClick={onSave}>保存</NavBtn>}>
+      <div style={{ padding:'6px 22px 10px' }}>
+        <div style={{ display:'flex', alignItems:'stretch', gap:8, fontSize:11, color:'#8a8a8a' }}>
+          <button onClick={onChangeBase} style={{ appearance:'none', border:'1px solid #e8e6e2', background:'#ffffff',
+            flex:1, padding:'10px 12px', textAlign:'left', cursor:'pointer', fontFamily:'inherit' }}>
+            <div style={{ fontSize:9, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase' }}>BASE ★</div>
+            <div style={{ fontSize:12, color:'#1c1c1c', fontWeight:500, marginTop:3, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{base.name}</div>
+            <div style={{ fontSize:10, color:'#8a8a8a', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{base.brand} · {base.sizeLabel}</div>
+          </button>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'center', width:30, fontSize:18, color:'#cdcac3', fontFamily:'"Cormorant Garamond",serif' }}>↔</div>
+          <div style={{ background:'#1c1c1c', color:'#faf8f4', flex:1, padding:'10px 12px' }}>
+            <div style={{ fontSize:9, letterSpacing:'0.18em', color:'rgba(250,248,244,0.6)', textTransform:'uppercase' }}>CANDIDATE</div>
+            <div style={{ fontSize:12, fontWeight:500, marginTop:3, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{candidate.brand||'商品名未設定'}</div>
+            <div style={{ fontSize:10, color:'rgba(250,248,244,0.6)' }}>size {candidate.sizeLabel||'—'}</div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ margin:'4px 12px 0', padding:'8px 0', background:'#fbfaf6', borderTop:'1px solid #ececec', borderBottom:'1px solid #ececec', position:'relative' }}>
+        <FigureCompare category={candidate.category} rows={rows} showLabels={showLabels} height={360} />
+        <div style={{ position:'absolute', bottom:12, left:0, right:0, display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
+          <div style={{ fontSize:10, letterSpacing:'0.2em', color:'#8a8a8a', textTransform:'uppercase' }}>Verdict</div>
+          <VerdictPill tone={v.tone}>{v.label}</VerdictPill>
+        </div>
+      </div>
+
+      <div style={{ padding:'18px 22px 4px' }}>
+        {judgementUI === 'label' && <VerdictLabelView v={v} />}
+        {judgementUI === 'score' && <VerdictScoreView v={v} rows={rows} />}
+        {judgementUI === 'breakdown' && <VerdictBreakdownView v={v} rows={rows} cat={cat} />}
+        {(judgementUI === 'all' || !judgementUI) && (
+          <>
+            <VerdictLabelView v={v} compact />
+            <VerdictScoreView v={v} rows={rows} compact />
+            <VerdictBreakdownView v={v} rows={rows} cat={cat} />
+          </>
+        )}
+      </div>
+
+      <div style={{ padding:'20px 22px 28px', display:'flex', gap:10 }}>
+        <GhostBtn onClick={onBack}>サイズを直す</GhostBtn>
+        <PrimaryBtn onClick={onSave}>保存して戻る</PrimaryBtn>
+      </div>
+    </Chrome>
+  );
+}
+
+function VerdictLabelView({ v, compact=false }) {
+  const { VerdictPill } = window.fittoUI;
+  const conf = v.score == null ? '—' : v.score >= 88 ? '高' : v.score >= 70 ? '中' : '低';
+  return (
+    <div style={{ background:'#ffffff', border:'1px solid #ececec', padding:compact?'14px 16px':'20px 18px', marginBottom:compact?12:0 }}>
+      <div style={{ display:'flex', alignItems:'baseline', gap:10, marginBottom:8 }}>
+        <div style={{ fontSize:10, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase' }}>判定</div>
+        <div style={{ flex:1, height:1, background:'#e8e6e2' }} />
+        <div style={{ fontSize:10, color:'#8a8a8a' }}>信頼度 {conf}</div>
+      </div>
+      <div style={{ fontFamily:'"Cormorant Garamond","Noto Sans JP",serif', fontSize:compact?28:36, fontWeight:500, lineHeight:1.1, color:'#1c1c1c', marginBottom:8 }}>{v.label}</div>
+      <div style={{ fontSize:12, lineHeight:1.7, color:'#4a4a4a', marginBottom:10 }}>{v.summary}</div>
+      <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+        {v.tightCount > 0 && <VerdictPill tone="warn" small>タイト {v.tightCount}箇所</VerdictPill>}
+        {v.looseCount > 0 && <VerdictPill tone="soft" small>ゆとり {v.looseCount}箇所</VerdictPill>}
+        {v.majorCount > 0 && <VerdictPill tone="bad" small>差大 {v.majorCount}箇所</VerdictPill>}
+        {v.tightCount === 0 && v.looseCount === 0 && <VerdictPill tone="ok" small>全項目ジャスト</VerdictPill>}
+      </div>
+    </div>
+  );
+}
+
+function VerdictScoreView({ v, rows, compact=false }) {
+  const { TOLERANCE } = window.fittoData;
+  const score = v.score ?? 0;
+  const r = 36, c = 2 * Math.PI * r, dash = (score / 100) * c;
+  const stroke = { ok:'#1c1c1c', soft:'#6b7c5a', warn:'#b86a4a', bad:'#8a3a1c' }[v.tone] || '#cdcac3';
+  return (
+    <div style={{ background:'#ffffff', border:'1px solid #ececec', padding:compact?'14px 16px':'20px 18px',
+      marginBottom:compact?12:0, display:'flex', alignItems:'center', gap:18 }}>
+      <div style={{ position:'relative', width:92, height:92, flexShrink:0 }}>
+        <svg width="92" height="92" viewBox="0 0 92 92">
+          <circle cx="46" cy="46" r={r} fill="none" stroke="#ececec" strokeWidth="3" />
+          <circle cx="46" cy="46" r={r} fill="none" stroke={stroke} strokeWidth="3"
+            strokeDasharray={`${dash} ${c}`} strokeLinecap="butt" transform="rotate(-90 46 46)" />
+        </svg>
+        <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column' }}>
+          <div style={{ fontFamily:'"Cormorant Garamond",serif', fontSize:30, fontWeight:500, color:'#1c1c1c', lineHeight:1 }}>{score}</div>
+          <div style={{ fontSize:9, letterSpacing:'0.16em', color:'#8a8a8a', textTransform:'uppercase', marginTop:2 }}>fit score</div>
+        </div>
+      </div>
+      <div style={{ flex:1, minWidth:0 }}>
+        <div style={{ fontSize:10, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase', marginBottom:4 }}>スコア内訳</div>
+        <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+          {[
+            { label:'ジャスト', count:rows.filter(r => r.status==='fit').length, color:'#1c1c1c' },
+            { label:'ゆとり', count:rows.filter(r => r.diff!=null && r.diff > (TOLERANCE[r.key]?.fit||2)).length, color:'#6b7c5a' },
+            { label:'タイト', count:rows.filter(r => r.diff!=null && r.diff < -(TOLERANCE[r.key]?.fit||2)).length, color:'#b86a4a' },
+          ].map(({ label, count, color }) => {
+            const total = rows.filter(r => r.diff!=null).length;
+            const pct = total ? (count/total)*100 : 0;
+            return (
+              <div key={label} style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <div style={{ width:50, fontSize:10, color:'#4a4a4a' }}>{label}</div>
+                <div style={{ flex:1, height:4, background:'#f3f0ea', position:'relative' }}>
+                  <div style={{ position:'absolute', inset:0, width:`${pct}%`, background:color }} />
+                </div>
+                <div style={{ width:24, fontSize:10, color:'#8a8a8a', textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{count}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VerdictBreakdownView({ v, rows, cat }) {
+  return (
+    <div style={{ background:'#ffffff', border:'1px solid #ececec' }}>
+      <div style={{ padding:'12px 16px 10px', borderBottom:'1px solid #ececec', display:'flex', alignItems:'baseline', gap:10 }}>
+        <div style={{ fontSize:10, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase' }}>項目別の差分</div>
+        <div style={{ flex:1, height:1, background:'#e8e6e2' }} />
+        <div style={{ fontSize:10, color:'#8a8a8a' }}>{v.valid}/{cat.fields.length}項目</div>
+      </div>
+      {rows.map((r, i) => {
+        const { TOLERANCE } = window.fittoData;
+        const tol = TOLERANCE[r.key] || { fit:2, loose:4, major:7 };
+        const labelMap = {
+          fit:{ ja:'ジャスト', tone:'ok' }, 'slightly-loose':{ ja:'ややゆるい', tone:'soft' },
+          'slightly-tight':{ ja:'ややタイト', tone:'soft' }, loose:{ ja:'ゆるい', tone:'warn' },
+          tight:{ ja:'タイト', tone:'warn' }, 'too-loose':{ ja:'差大（ゆるい）', tone:'bad' },
+          'too-tight':{ ja:'差大（タイト）', tone:'bad' }, missing:{ ja:'データなし', tone:'neutral' },
+        };
+        const tag = labelMap[r.status] || labelMap.missing;
+        const dotColor = { ok:'#1c1c1c', soft:'#6b7c5a', warn:'#b86a4a', bad:'#8a3a1c', neutral:'#cdcac3' }[tag.tone];
+        const range = tol.major + 2;
+        const pct = r.diff == null ? 50 : Math.max(0, Math.min(100, 50 + (r.diff/range)*50));
+        return (
+          <div key={r.key} style={{ padding:'12px 16px', borderBottom: i === rows.length-1 ? 'none' : '1px solid #f0eee9' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:6 }}>
+              <div style={{ width:22, height:22, borderRadius:'50%', border:'1px solid #d8d6d2',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                fontSize:9, color:'#8a8a8a', fontFamily:'"Cormorant Garamond",serif' }}>{r.short}</div>
+              <div style={{ fontSize:12, fontWeight:500, color:'#1c1c1c' }}>{r.ja}</div>
+              {r.estimated && <span style={{ fontSize:9, letterSpacing:'0.1em', color:'#b86a4a', border:'1px solid #e8c7b6', padding:'1px 5px' }}>推定</span>}
+              <div style={{ flex:1 }} />
+              <div style={{ fontSize:11, fontVariantNumeric:'tabular-nums', color:'#8a8a8a' }}>
+                {r.base??'—'}<span style={{ margin:'0 4px' }}>→</span>
+                <span style={{ color:'#1c1c1c', fontWeight:500 }}>{r.target??'—'}</span><span style={{ marginLeft:4 }}>cm</span>
+              </div>
+            </div>
+            <div style={{ position:'relative', height:4, background:'#f3f0ea', marginLeft:32, marginBottom:6 }}>
+              <div style={{ position:'absolute', left:'50%', top:-2, bottom:-2, width:1, background:'#cdcac3' }} />
+              <div style={{ position:'absolute', top:0, bottom:0, left:`${50-(tol.fit/range)*50}%`, width:`${(tol.fit*2/range)*50}%`, background:'#e8e6e2' }} />
+              {r.diff != null && <div style={{ position:'absolute', top:-3, height:10, width:2, left:`${pct}%`, transform:'translateX(-1px)', background:dotColor }} />}
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginLeft:32 }}>
+              <span style={{ width:6, height:6, borderRadius:'50%', background:dotColor }} />
+              <span style={{ fontSize:11, color:'#1c1c1c' }}>{tag.ja}</span>
+              {r.diff != null && <span style={{ fontSize:11, color:'#8a8a8a', fontVariantNumeric:'tabular-nums', marginLeft:'auto' }}>{r.diff>0?'+':''}{r.diff.toFixed(1)}cm</span>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+window.fittoScreens.ResultScreen = ResultScreen;
+</script>
+
+<!-- ── app ── -->
+<script type="text/babel">
+const { DEFAULT_WARDROBE, SAMPLE_CANDIDATE_PANTS } = window.fittoData;
+const { HomeScreen, SetupListScreen, SetupEditScreen, CompareInputScreen, ResultScreen } = window.fittoScreens;
+
+const SAMPLE_HISTORY = [
+  { id:'h1', category:'tops', brand:'AURALEE', product:'Brushed Knit', date:'5月 2日', baseName:'ジャストTシャツ', label:'ぴったり', tone:'ok' },
+  { id:'h2', category:'pants', brand:'STUDIO NICHOLSON', product:'Sorte Pant', date:'4月 28日', baseName:'ジャストパンツ', label:'少しゆるめ', tone:'soft' },
+  { id:'h3', category:'outer', brand:'LEMAIRE', product:'Soft Coat', date:'4月 14日', baseName:'ジャストコート', label:'ゆるい', tone:'warn' },
+];
+
+function App() {
+  const [t, setTweak] = useTweaks(window.TWEAK_DEFAULTS);
+  const [wardrobe, setWardrobe] = React.useState(DEFAULT_WARDROBE);
+  const [history, setHistory]   = React.useState(SAMPLE_HISTORY);
+  const [screen, setScreen]     = React.useState('home');
+  const [draft, setDraft] = React.useState({
+    category:'pants',
+    brand: SAMPLE_CANDIDATE_PANTS.brand + ' — ' + SAMPLE_CANDIDATE_PANTS.product,
+    sizeLabel: SAMPLE_CANDIDATE_PANTS.sizeLabel,
+    baseId: 'w1',
+    measures: { ...SAMPLE_CANDIDATE_PANTS.measures },
+  });
+  const [editTarget, setEditTarget] = React.useState(null);
+
+  const baseGarment = wardrobe.find(w => w.id === draft.baseId)
+    || wardrobe.find(w => w.category === draft.category && w.primary)
+    || wardrobe.find(w => w.category === draft.category);
+
+  const onSaveItem = (item) => {
+    setWardrobe(ws => {
+      const idx = ws.findIndex(w => w.id === item.id);
+      let next = idx >= 0 ? (next = ws.slice(), next[idx] = item, next) : [...ws, item];
+      if (item.primary) next = next.map(w => w.category === item.category && w.id !== item.id ? { ...w, primary:false } : w);
+      return next;
+    });
+    setScreen('setup');
+  };
+
+  const onTogglePrimary = (id) => {
+    setWardrobe(ws => {
+      const target = ws.find(w => w.id === id);
+      if (!target) return ws;
+      return ws.map(w => {
+        if (w.id === id) return { ...w, primary:!w.primary };
+        if (w.category === target.category && !target.primary) return { ...w, primary:false };
+        return w;
+      });
+    });
+  };
+
+  const onSaveResult = () => {
+    const { compareItem, verdict } = window.fittoData;
+    const v = verdict(compareItem(baseGarment, draft));
+    const newH = { id:'h'+Date.now(), category:draft.category,
+      brand:(draft.brand||'').split(' — ')[0]||draft.brand||'無題',
+      product:(draft.brand||'').split(' — ')[1]||draft.sizeLabel||'',
+      date:'今日', baseName:baseGarment?.name||'', label:v.label, tone:v.tone };
+    setHistory(h => [newH, ...h]);
+    setScreen('home');
+  };
+
+  let screenEl;
+  if (screen === 'home') {
+    screenEl = <HomeScreen wardrobe={wardrobe} history={history} onCompare={() => setScreen('compare')}
+      onSetup={() => setScreen('setup')} onItem={(w) => { setEditTarget(w); setScreen('edit'); }} />;
+  } else if (screen === 'compare') {
+    screenEl = <CompareInputScreen wardrobe={wardrobe} draft={draft} setDraft={setDraft}
+      onBack={() => setScreen('home')} onCompute={() => setScreen('result')} />;
+  } else if (screen === 'result') {
+    screenEl = baseGarment ? <ResultScreen base={baseGarment} candidate={draft}
+      judgementUI={t.judgementUI} showLabels={t.showLabels}
+      onBack={() => setScreen('compare')} onSave={onSaveResult} onChangeBase={() => setScreen('compare')} /> : null;
+  } else if (screen === 'setup') {
+    screenEl = <SetupListScreen wardrobe={wardrobe} onBack={() => setScreen('home')}
+      onAdd={() => { setEditTarget(null); setScreen('edit'); }}
+      onEdit={(item) => { setEditTarget(item); setScreen('edit'); }}
+      onTogglePrimary={onTogglePrimary} />;
+  } else if (screen === 'edit') {
+    screenEl = <SetupEditScreen initial={editTarget} onBack={() => setScreen('setup')} onSave={onSaveItem} />;
+  }
+
+  return (
+    <>
+      <style>{`@keyframes fitto-fade { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }`}</style>
+      <IOSDevice dark={t.darkPhone}>
+        <div style={{ display:'flex', flexDirection:'column', width:'100%', height:'100%',
+          background: t.darkPhone?'#1a1a1a':'#faf8f4', paddingTop:54, paddingBottom:24, boxSizing:'border-box' }}>
+          <div style={{ flex:1, minHeight:0, overflow:'hidden' }}>
+            <div key={screen} style={{ width:'100%', height:'100%', animation:'fitto-fade 220ms ease' }}>
+              {screenEl}
+            </div>
+          </div>
+        </div>
+      </IOSDevice>
+
+      <TweaksPanel>
+        <TweakSection label="判定UIのバリエーション" />
+        <TweakRadio label="表示" value={t.judgementUI}
+          options={[{value:'all',label:'全部入り'},{value:'label',label:'ラベル'},{value:'score',label:'スコア'},{value:'breakdown',label:'項目別'}]}
+          onChange={(v) => setTweak('judgementUI', v)} />
+        <TweakSection label="図のラベル" />
+        <TweakToggle label="吹き出しを表示" value={t.showLabels} onChange={(v) => setTweak('showLabels', v)} />
+        <TweakSection label="ジャンプ" />
+        <TweakButton label="ホーム" onClick={() => setScreen('home')} />
+        <TweakButton label="比較入力" onClick={() => setScreen('compare')} />
+        <TweakButton label="結果画面" onClick={() => setScreen('result')} />
+        <TweakButton label="ジャストの服一覧" onClick={() => setScreen('setup')} />
+        <TweakButton label="新規登録" onClick={() => { setEditTarget(null); setScreen('edit'); }} />
+      </TweaksPanel>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
