@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>fitto — 服のサイズ比較</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #1c1c1c; }
+    iframe {
+      display: block;
+      border: none;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <iframe id="fitto" src="about:blank" allow="camera;microphone"></iframe>
+  <script>
+    var GAS_URL = 'https://script.google.com/macros/s/AKfycbyo4NFqE8XTn8Bl7HfBC-rMn33F2TPLvvTiTSBbhOS4YPTGtjNyckhlb1-Y4sIDvbv-MA/exec';
+    document.getElementById('fitto').src = GAS_URL + window.location.search;
+  </script>
+</body>
+</html>
