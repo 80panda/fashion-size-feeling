@@ -18,12 +18,13 @@
       --accent: #6b7c5a; --accent-soft: #aab59a;
       --warn: #b86a4a; --ok: #5a7a5a;
     }
-    html, body { margin: 0; padding: 0; height: 100%; background: var(--paper);
+    html, body { margin: 0; padding: 0; height: 100%; background: #efece6;
       font-family: "Noto Sans JP", "Inter", system-ui, -apple-system, sans-serif;
-      color: var(--ink); -webkit-font-smoothing: antialiased; }
+      color: var(--ink); -webkit-font-smoothing: antialiased;
+      font-size: 16px; line-height: 1.5; }
     * { box-sizing: border-box; }
     button { font-family: inherit; }
-    input, select, textarea { font-family: inherit; }
+    input, select, textarea { font-family: inherit; font-size: 16px; }
   </style>
 </head>
 <body>
@@ -214,7 +215,8 @@ const CATEGORIES = {
 
 const DEFAULT_WARDROBE = [];
 
-const EMPTY_DRAFT = { category:'pants', brand:'', sizeLabel:'', baseId:null, measures:{} };
+const EMPTY_DRAFT = { category:'pants', brand:'', baseId:null, sizes:[] };
+// sizes: [{ id, sizeLabel, measures: { ... } }]
 
 const TOLERANCE = {
   waist:{ fit:2, loose:5, major:9 }, hip:{ fit:2, loose:5, major:9 },
@@ -602,10 +604,10 @@ const { CATEGORIES } = window.fittoData;
 function Chrome({ title, titleNode, leading, trailing, children, scroll=true }) {
   return (
     <div style={{ display:'flex', flexDirection:'column', width:'100%', flex:1, minHeight:0, background:'#faf8f4' }}>
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 18px 10px', minHeight:44, flexShrink:0 }}>
-        <div style={{ minWidth:64, display:'flex', alignItems:'center' }}>{leading}</div>
-        {titleNode || <div style={{ fontFamily:'"Cormorant Garamond","Noto Sans JP",serif', fontSize:18, fontWeight:500, letterSpacing:'0.02em', color:'#1c1c1c' }}>{title}</div>}
-        <div style={{ minWidth:64, display:'flex', alignItems:'center', justifyContent:'flex-end' }}>{trailing}</div>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 22px 14px', minHeight:56, flexShrink:0 }}>
+        <div style={{ minWidth:72, display:'flex', alignItems:'center' }}>{leading}</div>
+        {titleNode || <div style={{ fontFamily:'"Cormorant Garamond","Noto Sans JP",serif', fontSize:22, fontWeight:500, letterSpacing:'0.02em', color:'#1c1c1c' }}>{title}</div>}
+        <div style={{ minWidth:72, display:'flex', alignItems:'center', justifyContent:'flex-end' }}>{trailing}</div>
       </div>
       <div style={{ flex:1, minHeight:0, overflowY:scroll?'auto':'hidden', WebkitOverflowScrolling:'touch' }}>{children}</div>
     </div>
@@ -615,35 +617,35 @@ function Chrome({ title, titleNode, leading, trailing, children, scroll=true }) 
 function NavBtn({ children, onClick, ghost=false }) {
   return (
     <button onClick={onClick} style={{ appearance:'none', border:'none', background:'transparent',
-      padding:'6px 0', color:ghost?'#8a8a8a':'#1c1c1c', fontSize:13, fontWeight:400,
-      letterSpacing:'0.02em', fontFamily:'inherit', cursor:'pointer' }}>{children}</button>
+      padding:'10px 4px', color:ghost?'#8a8a8a':'#1c1c1c', fontSize:15, fontWeight:400,
+      letterSpacing:'0.02em', fontFamily:'inherit', cursor:'pointer', minHeight:44 }}>{children}</button>
   );
 }
 
 function PrimaryBtn({ children, onClick, disabled=false, full=true }) {
   return (
     <button onClick={onClick} disabled={disabled} style={{ appearance:'none', border:'none',
-      background:disabled?'#cdcac3':'#1c1c1c', color:'#faf8f4', padding:'14px 22px',
-      width:full?'100%':'auto', borderRadius:2, fontSize:14, fontWeight:500,
-      letterSpacing:'0.06em', fontFamily:'inherit', cursor:disabled?'default':'pointer', textAlign:'center' }}>{children}</button>
+      background:disabled?'#cdcac3':'#1c1c1c', color:'#faf8f4', padding:'16px 24px',
+      width:full?'100%':'auto', borderRadius:2, fontSize:15, fontWeight:500,
+      letterSpacing:'0.06em', fontFamily:'inherit', cursor:disabled?'default':'pointer', textAlign:'center', minHeight:52 }}>{children}</button>
   );
 }
 
 function GhostBtn({ children, onClick, full=true }) {
   return (
     <button onClick={onClick} style={{ appearance:'none', background:'transparent',
-      color:'#1c1c1c', padding:'14px 22px', width:full?'100%':'auto',
-      border:'1px solid #d8d6d2', borderRadius:2, fontSize:13, fontWeight:500,
-      letterSpacing:'0.06em', fontFamily:'inherit', cursor:'pointer' }}>{children}</button>
+      color:'#1c1c1c', padding:'16px 24px', width:full?'100%':'auto',
+      border:'1px solid #d8d6d2', borderRadius:2, fontSize:15, fontWeight:500,
+      letterSpacing:'0.06em', fontFamily:'inherit', cursor:'pointer', minHeight:52 }}>{children}</button>
   );
 }
 
 function SectionTitle({ kicker, children, action }) {
   return (
-    <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', padding:'20px 22px 10px' }}>
+    <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', padding:'24px 24px 12px' }}>
       <div>
-        {kicker && <div style={{ fontSize:10, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase', marginBottom:4 }}>{kicker}</div>}
-        <div style={{ fontFamily:'"Cormorant Garamond","Noto Sans JP",serif', fontSize:22, fontWeight:500, letterSpacing:'0.01em', color:'#1c1c1c' }}>{children}</div>
+        {kicker && <div style={{ fontSize:11, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase', marginBottom:6 }}>{kicker}</div>}
+        <div style={{ fontFamily:'"Cormorant Garamond","Noto Sans JP",serif', fontSize:26, fontWeight:500, letterSpacing:'0.01em', color:'#1c1c1c' }}>{children}</div>
       </div>
       {action}
     </div>
@@ -683,9 +685,9 @@ function VerdictPill({ tone, small=false, children }) {
   }[tone] || { bg:'#f3f0ea', fg:'#1c1c1c', border:'#cdcac3' };
   return (
     <span style={{ display:'inline-flex', alignItems:'center',
-      padding:small?'3px 10px':'6px 14px',
+      padding:small?'4px 12px':'8px 16px',
       background:palette.bg, color:palette.fg, border:`1px solid ${palette.border}`,
-      borderRadius:999, fontSize:small?10:11, fontWeight:500, letterSpacing:'0.06em', whiteSpace:'nowrap' }}>{children}</span>
+      borderRadius:999, fontSize:small?12:13, fontWeight:500, letterSpacing:'0.06em', whiteSpace:'nowrap' }}>{children}</span>
   );
 }
 
@@ -700,18 +702,18 @@ function HomeScreen({ wardrobe, history, onCompare, onSetup, onItem }) {
 
   return (
     <Chrome
-      titleNode={<span style={{ fontFamily:'"Cormorant Garamond",serif', fontSize:34, fontWeight:500, letterSpacing:'0.06em', color:'#1c1c1c', lineHeight:1 }}>fitto</span>}
+      titleNode={<span style={{ fontFamily:'"Cormorant Garamond",serif', fontSize:44, fontWeight:500, letterSpacing:'0.06em', color:'#1c1c1c', lineHeight:1 }}>fitto</span>}
       leading={<NavBtn ghost>―</NavBtn>}
       trailing={<NavBtn onClick={onSetup}>設定</NavBtn>}
     >
       {isEmpty ? (
-        <div style={{ padding:'32px 22px 28px', display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center', gap:20 }}>
-          <div style={{ width:64, height:64, background:'#f3f0ea', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <CategoryGlyph category="tops" size={32} color="#8a8a8a" />
+        <div style={{ padding:'40px 24px 32px', display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center', gap:24 }}>
+          <div style={{ width:80, height:80, background:'#f3f0ea', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <CategoryGlyph category="tops" size={40} color="#8a8a8a" />
           </div>
           <div>
-            <div style={{ fontFamily:'"Cormorant Garamond",serif', fontSize:20, color:'#1c1c1c', marginBottom:8 }}>服を登録して始めましょう</div>
-            <div style={{ fontSize:12, color:'#8a8a8a', lineHeight:1.8 }}>
+            <div style={{ fontFamily:'"Cormorant Garamond",serif', fontSize:24, color:'#1c1c1c', marginBottom:12 }}>服を登録して始めましょう</div>
+            <div style={{ fontSize:14, color:'#8a8a8a', lineHeight:1.8 }}>
               手持ちのジャストサイズな一着を登録すると、<br/>気になる服と寸法を比較できます。
             </div>
           </div>
@@ -719,28 +721,28 @@ function HomeScreen({ wardrobe, history, onCompare, onSetup, onItem }) {
         </div>
       ) : (
         <>
-          <div style={{ padding:'4px 22px 20px' }}>
+          <div style={{ padding:'8px 24px 24px' }}>
             <PrimaryBtn onClick={onCompare}>サイズを比較する</PrimaryBtn>
           </div>
 
           <SectionTitle kicker="Just size" action={<NavBtn ghost onClick={onSetup}>すべて</NavBtn>}>ジャストの基準</SectionTitle>
-          <div style={{ padding:'0 22px 8px', display:'flex', flexDirection:'column', gap:10 }}>
+          <div style={{ padding:'0 24px 8px', display:'flex', flexDirection:'column', gap:12 }}>
             {primaryItems.length === 0 ? (
-              <div style={{ padding:'14px', border:'1px dashed #d8d6d2', borderRadius:2, fontSize:12, color:'#8a8a8a', textAlign:'center' }}>
+              <div style={{ padding:'18px', border:'1px dashed #d8d6d2', borderRadius:2, fontSize:14, color:'#8a8a8a', textAlign:'center' }}>
                 ★ 基準に設定した服がありません。設定から変更できます。
               </div>
             ) : primaryItems.map(w => (
               <button key={w.id} onClick={() => onItem(w)} style={{ appearance:'none', textAlign:'left',
-                display:'flex', alignItems:'center', gap:14, padding:'14px 14px', background:'#ffffff',
+                display:'flex', alignItems:'center', gap:16, padding:'18px 18px', background:'#ffffff',
                 border:'1px solid #e8e6e2', borderRadius:2, cursor:'pointer', fontFamily:'inherit' }}>
-                <div style={{ width:48, height:48, background:'#f3f0ea', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                  <CategoryGlyph category={w.category} size={28} />
+                <div style={{ width:56, height:56, background:'#f3f0ea', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                  <CategoryGlyph category={w.category} size={32} />
                 </div>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:13, fontWeight:500, color:'#1c1c1c', marginBottom:2 }}>{w.name}</div>
-                  <div style={{ fontSize:11, color:'#8a8a8a', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{w.brand} · size {w.sizeLabel}</div>
+                  <div style={{ fontSize:15, fontWeight:500, color:'#1c1c1c', marginBottom:4 }}>{w.name}</div>
+                  <div style={{ fontSize:12, color:'#8a8a8a', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{w.brand} · size {w.sizeLabel}</div>
                 </div>
-                <div style={{ fontSize:18, color:'#cdcac3', marginLeft:8 }}>›</div>
+                <div style={{ fontSize:22, color:'#cdcac3', marginLeft:8 }}>›</div>
               </button>
             ))}
           </div>
@@ -748,13 +750,13 @@ function HomeScreen({ wardrobe, history, onCompare, onSetup, onItem }) {
       )}
 
       {!isEmpty && (
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:1, margin:'14px 22px 4px', background:'#e8e6e2', border:'1px solid #e8e6e2' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:1, margin:'18px 24px 4px', background:'#e8e6e2', border:'1px solid #e8e6e2' }}>
           {Object.values(CATEGORIES).map(c => (
-            <div key={c.id} style={{ background:'#faf8f4', padding:'14px 8px', textAlign:'center' }}>
-              <CategoryGlyph category={c.id} size={26} color="#4a4a4a" />
-              <div style={{ fontSize:10, letterSpacing:'0.12em', color:'#8a8a8a', marginTop:4 }}>{c.label.toUpperCase()}</div>
-              <div style={{ fontSize:18, fontWeight:500, marginTop:2, color:'#1c1c1c', fontFamily:'"Cormorant Garamond",serif' }}>
-                {counts[c.id]}<span style={{ fontSize:11, color:'#8a8a8a', marginLeft:2 }}>着</span>
+            <div key={c.id} style={{ background:'#faf8f4', padding:'18px 8px', textAlign:'center' }}>
+              <CategoryGlyph category={c.id} size={32} color="#4a4a4a" />
+              <div style={{ fontSize:11, letterSpacing:'0.12em', color:'#8a8a8a', marginTop:6 }}>{c.label.toUpperCase()}</div>
+              <div style={{ fontSize:22, fontWeight:500, marginTop:4, color:'#1c1c1c', fontFamily:'"Cormorant Garamond",serif' }}>
+                {counts[c.id]}<span style={{ fontSize:13, color:'#8a8a8a', marginLeft:2 }}>着</span>
               </div>
             </div>
           ))}
@@ -762,16 +764,16 @@ function HomeScreen({ wardrobe, history, onCompare, onSetup, onItem }) {
       )}
 
       <SectionTitle kicker="History" action={history.length > 0 ? <NavBtn ghost>すべて</NavBtn> : null}>最近の比較</SectionTitle>
-      <div style={{ padding:'0 22px 28px', display:'flex', flexDirection:'column', gap:8 }}>
-        {history.length === 0 && <div style={{ fontSize:12, color:'#8a8a8a', padding:'8px 0', lineHeight:1.7 }}>まだ比較した服はありません。</div>}
+      <div style={{ padding:'0 24px 32px', display:'flex', flexDirection:'column', gap:10 }}>
+        {history.length === 0 && <div style={{ fontSize:14, color:'#8a8a8a', padding:'10px 0', lineHeight:1.7 }}>まだ比較した服はありません。</div>}
         {history.slice(0,4).map(h => (
-          <div key={h.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 0', borderBottom:'1px solid #ececec' }}>
-            <div style={{ width:36, height:36, background:'#f3f0ea', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              <CategoryGlyph category={h.category} size={22} color="#4a4a4a" />
+          <div key={h.id} style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 0', borderBottom:'1px solid #ececec' }}>
+            <div style={{ width:44, height:44, background:'#f3f0ea', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              <CategoryGlyph category={h.category} size={26} color="#4a4a4a" />
             </div>
             <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize:12, fontWeight:500, color:'#1c1c1c' }}>{h.brand} — {h.product}</div>
-              <div style={{ fontSize:10, color:'#8a8a8a' }}>{h.date} · 基準: {h.baseName}</div>
+              <div style={{ fontSize:14, fontWeight:500, color:'#1c1c1c' }}>{h.brand} — {h.product}</div>
+              <div style={{ fontSize:12, color:'#8a8a8a', marginTop:2 }}>{h.date} · 基準: {h.baseName}</div>
             </div>
             <VerdictPill tone={h.tone} small>{h.label}</VerdictPill>
           </div>
@@ -790,18 +792,18 @@ window.fittoScreens.HomeScreen = HomeScreen;
 <script type="text/babel">
 function FieldLabel({ children, padded=false }) {
   return (
-    <div style={{ fontSize:10, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase',
-      margin: padded ? '14px 22px 8px' : '12px 0 6px' }}>{children}</div>
+    <div style={{ fontSize:11, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase',
+      margin: padded ? '18px 24px 10px' : '14px 0 8px' }}>{children}</div>
   );
 }
 
 function TextField({ label, value, onChange, placeholder }) {
   return (
-    <div style={{ marginBottom:14 }}>
+    <div style={{ marginBottom:18 }}>
       <FieldLabel>{label}</FieldLabel>
       <input type="text" value={value||''} placeholder={placeholder} onChange={(e) => onChange(e.target.value)}
         style={{ width:'100%', border:'none', borderBottom:'1px solid #d8d6d2', background:'transparent',
-          padding:'8px 2px', fontSize:14, fontFamily:'inherit', color:'#1c1c1c', outline:'none' }} />
+          padding:'12px 2px', fontSize:16, fontFamily:'inherit', color:'#1c1c1c', outline:'none' }} />
     </div>
   );
 }
@@ -812,49 +814,49 @@ function SetupListScreen({ wardrobe, onBack, onAdd, onEdit, onTogglePrimary, onR
 
   return (
     <Chrome title="ジャストサイズ" leading={<NavBtn onClick={onBack}>‹ 戻る</NavBtn>} trailing={<NavBtn onClick={onAdd}>＋ 追加</NavBtn>}>
-      <div style={{ padding:'4px 22px 12px' }}>
-        <div style={{ fontSize:12, lineHeight:1.7, color:'#4a4a4a' }}>
+      <div style={{ padding:'8px 24px 16px' }}>
+        <div style={{ fontSize:14, lineHeight:1.8, color:'#4a4a4a' }}>
           基準にする一着を、カテゴリごとに登録しておきます。<br/>★印が比較時のデフォルト基準です。
         </div>
       </div>
 
       {groups.map(g => (
         <div key={g.cat}>
-          <div style={{ display:'flex', alignItems:'center', gap:10, padding:'20px 22px 8px' }}>
-            <CategoryGlyph category={g.cat} size={20} color="#8a8a8a" />
-            <div style={{ fontSize:11, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase' }}>{CATEGORIES[g.cat].labelEn}</div>
+          <div style={{ display:'flex', alignItems:'center', gap:12, padding:'24px 24px 10px' }}>
+            <CategoryGlyph category={g.cat} size={24} color="#8a8a8a" />
+            <div style={{ fontSize:12, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase' }}>{CATEGORIES[g.cat].labelEn}</div>
             <div style={{ flex:1, height:1, background:'#e8e6e2' }} />
           </div>
-          <div style={{ padding:'0 22px', display:'flex', flexDirection:'column', gap:8 }}>
+          <div style={{ padding:'0 24px', display:'flex', flexDirection:'column', gap:10 }}>
             {g.items.map(w => (
-              <div key={w.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 14px',
+              <div key={w.id} style={{ display:'flex', alignItems:'center', gap:14, padding:'18px 18px',
                 background:'#ffffff', border:'1px solid #e8e6e2', borderRadius:2 }}>
                 <button onClick={() => onTogglePrimary(w.id)} style={{ appearance:'none', border:'none',
-                  background:'transparent', width:24, height:24, cursor:'pointer', padding:0,
-                  color:w.primary?'#1c1c1c':'#cdcac3', fontSize:14 }}>{w.primary?'★':'☆'}</button>
+                  background:'transparent', width:32, height:32, cursor:'pointer', padding:0,
+                  color:w.primary?'#1c1c1c':'#cdcac3', fontSize:18 }}>{w.primary?'★':'☆'}</button>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:13, fontWeight:500, color:'#1c1c1c' }}>{w.name}</div>
-                  <div style={{ fontSize:10, color:'#8a8a8a' }}>{w.brand} · size {w.sizeLabel}</div>
+                  <div style={{ fontSize:15, fontWeight:500, color:'#1c1c1c' }}>{w.name}</div>
+                  <div style={{ fontSize:12, color:'#8a8a8a', marginTop:2 }}>{w.brand} · size {w.sizeLabel}</div>
                 </div>
                 <button onClick={() => onEdit(w)} style={{ appearance:'none', border:'none', background:'transparent',
-                  fontSize:11, color:'#4a4a4a', cursor:'pointer', fontFamily:'inherit', padding:'4px 8px' }}>編集</button>
+                  fontSize:13, color:'#4a4a4a', cursor:'pointer', fontFamily:'inherit', padding:'8px 12px', minHeight:44 }}>編集</button>
               </div>
             ))}
             {g.items.length === 0 && (
-              <div style={{ padding:'14px', border:'1px dashed #d8d6d2', borderRadius:2, fontSize:12, color:'#8a8a8a', textAlign:'center' }}>未登録</div>
+              <div style={{ padding:'18px', border:'1px dashed #d8d6d2', borderRadius:2, fontSize:14, color:'#8a8a8a', textAlign:'center' }}>未登録</div>
             )}
           </div>
         </div>
       ))}
 
-      <div style={{ padding:'24px 22px 8px' }}>
+      <div style={{ padding:'28px 24px 12px' }}>
         <PrimaryBtn onClick={onAdd}>＋ 新しく登録する</PrimaryBtn>
       </div>
-      <div style={{ padding:'8px 22px 32px' }}>
+      <div style={{ padding:'12px 24px 36px' }}>
         <button onClick={() => {
           if (window.confirm('服とデータをすべて削除してリセットしますか？この操作は元に戻せません。')) onReset();
-        }} style={{ appearance:'none', border:'none', background:'transparent', padding:'10px 0',
-          fontSize:12, color:'#b86a4a', fontFamily:'inherit', cursor:'pointer', letterSpacing:'0.04em' }}>
+        }} style={{ appearance:'none', border:'none', background:'transparent', padding:'12px 0',
+          fontSize:13, color:'#b86a4a', fontFamily:'inherit', cursor:'pointer', letterSpacing:'0.04em', minHeight:44 }}>
           すべてのデータをリセット
         </button>
       </div>
@@ -878,11 +880,13 @@ function SetupEditScreen({ initial, onBack, onSave }) {
     setDraft(d => ({ ...d, measures: { ...d.measures, [k]: isNaN(num) ? undefined : num } }));
   };
 
-  const onAIResult = (result, selectedSize) => {
+  const onAIResult = (result, selectedSizes) => {
+    if (!selectedSizes.length) { setPasteOpen(false); return; }
+    const first = selectedSizes[0];
     let next = { ...draft };
     if (result.category && result.category !== draft.category) { next.category = result.category; next.measures = {}; }
-    next.measures = { ...(next.measures || {}), ...selectedSize.measures };
-    if (selectedSize.sizeLabel) next.sizeLabel = selectedSize.sizeLabel;
+    next.measures = { ...(next.measures || {}), ...first.measures };
+    if (first.sizeLabel) next.sizeLabel = first.sizeLabel;
     setDraft(next);
     setPasteOpen(false);
   };
@@ -890,103 +894,103 @@ function SetupEditScreen({ initial, onBack, onSave }) {
   return (
     <>
     <Chrome title={isNew?'新規登録':'編集'} leading={<NavBtn onClick={onBack}>‹ 戻る</NavBtn>} trailing={<NavBtn onClick={() => onSave(draft)}>保存</NavBtn>}>
-      <div style={{ padding:'8px 22px 18px' }}>
+      <div style={{ padding:'12px 24px 22px' }}>
         <FieldLabel>カテゴリ</FieldLabel>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:1, background:'#e8e6e2', border:'1px solid #e8e6e2' }}>
           {Object.values(CATEGORIES).map(c => {
             const sel = draft.category === c.id;
             return (
               <button key={c.id} onClick={() => update({ category:c.id, measures:{} })} style={{ appearance:'none', border:'none', cursor:'pointer',
-                padding:'14px 8px', background:sel?'#1c1c1c':'#faf8f4', color:sel?'#faf8f4':'#1c1c1c',
-                fontFamily:'inherit', display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
-                <window.fittoUI.CategoryGlyph category={c.id} size={24} color={sel?'#faf8f4':'#1c1c1c'} />
-                <span style={{ fontSize:11, letterSpacing:'0.06em' }}>{c.label}</span>
+                padding:'18px 8px', background:sel?'#1c1c1c':'#faf8f4', color:sel?'#faf8f4':'#1c1c1c',
+                fontFamily:'inherit', display:'flex', flexDirection:'column', alignItems:'center', gap:8, minHeight:80 }}>
+                <window.fittoUI.CategoryGlyph category={c.id} size={28} color={sel?'#faf8f4':'#1c1c1c'} />
+                <span style={{ fontSize:13, letterSpacing:'0.06em' }}>{c.label}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      <div style={{ margin:'0 22px 14px', padding:'12px', background:'#fbfaf6', border:'1px solid #ececec', display:'flex', alignItems:'center', gap:10 }}>
-        <div style={{ width:110, flexShrink:0 }}>
-          <FigureSimple category={draft.category} highlightField={focusedField} height={170} />
+      <div style={{ margin:'0 24px 18px', padding:'14px', background:'#fbfaf6', border:'1px solid #ececec', display:'flex', alignItems:'center', gap:12 }}>
+        <div style={{ width:120, flexShrink:0 }}>
+          <FigureSimple category={draft.category} highlightField={focusedField} height={180} />
         </div>
-        <div style={{ flex:1, fontSize:11, lineHeight:1.7, color:'#4a4a4a' }}>
+        <div style={{ flex:1, fontSize:13, lineHeight:1.7, color:'#4a4a4a' }}>
           {focusedField ? (
             <>
-              <div style={{ fontSize:10, letterSpacing:'0.16em', color:'#b86a4a', marginBottom:4 }}>MEASURING</div>
-              <div style={{ fontFamily:'"Cormorant Garamond",serif', fontSize:18, color:'#1c1c1c' }}>{cat.fields.find(f => f.key === focusedField)?.ja}</div>
-              <div style={{ fontSize:11, color:'#8a8a8a', marginTop:4 }}>平置きで測ったサイズを入力してください。</div>
+              <div style={{ fontSize:11, letterSpacing:'0.16em', color:'#b86a4a', marginBottom:6 }}>MEASURING</div>
+              <div style={{ fontFamily:'"Cormorant Garamond",serif', fontSize:20, color:'#1c1c1c' }}>{cat.fields.find(f => f.key === focusedField)?.ja}</div>
+              <div style={{ fontSize:12, color:'#8a8a8a', marginTop:6 }}>平置きで測ったサイズを入力してください。</div>
             </>
           ) : (
             <>
-              <div style={{ fontSize:10, letterSpacing:'0.16em', color:'#8a8a8a', marginBottom:4 }}>{cat.labelEn.toUpperCase()}</div>
-              <div style={{ fontFamily:'"Cormorant Garamond",serif', fontSize:18, color:'#1c1c1c' }}>{cat.label}の寸法</div>
-              <div style={{ fontSize:11, color:'#8a8a8a', marginTop:4 }}>数値の入力欄をタップすると、図の位置がハイライトされます。</div>
+              <div style={{ fontSize:11, letterSpacing:'0.16em', color:'#8a8a8a', marginBottom:6 }}>{cat.labelEn.toUpperCase()}</div>
+              <div style={{ fontFamily:'"Cormorant Garamond",serif', fontSize:20, color:'#1c1c1c' }}>{cat.label}の寸法</div>
+              <div style={{ fontSize:12, color:'#8a8a8a', marginTop:6 }}>数値の入力欄をタップすると、図の位置がハイライトされます。</div>
             </>
           )}
         </div>
       </div>
 
-      <div style={{ padding:'0 22px 4px' }}>
+      <div style={{ padding:'0 24px 4px' }}>
         <TextField label="呼び名" placeholder="例：ジャストパンツ" value={draft.name} onChange={v => update({ name:v })} />
         <TextField label="ブランド・型番" placeholder="例：A.P.C. Petit Standard" value={draft.brand} onChange={v => update({ brand:v })} />
         <TextField label="サイズ表記" placeholder="例：31, M, 4" value={draft.sizeLabel} onChange={v => update({ sizeLabel:v })} />
       </div>
 
-      <div style={{ padding:'0 22px 4px' }}>
+      <div style={{ padding:'8px 24px 4px' }}>
         <button onClick={() => setPasteOpen(true)} style={{ appearance:'none', cursor:'pointer', fontFamily:'inherit',
-          width:'100%', padding:'12px 14px', background:'#ffffff', border:'1px dashed #cdcac3',
-          borderRadius:2, color:'#1c1c1c', textAlign:'left', display:'flex', alignItems:'center', gap:10 }}>
-          <span style={{ width:22, height:22, borderRadius:'50%', background:'#1c1c1c', color:'#faf8f4',
-            display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontFamily:'"Cormorant Garamond",serif', flexShrink:0 }}>AI</span>
+          width:'100%', padding:'16px 18px', background:'#ffffff', border:'1px dashed #cdcac3',
+          borderRadius:2, color:'#1c1c1c', textAlign:'left', display:'flex', alignItems:'center', gap:12, minHeight:64 }}>
+          <span style={{ width:28, height:28, borderRadius:'50%', background:'#1c1c1c', color:'#faf8f4',
+            display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontFamily:'"Cormorant Garamond",serif', flexShrink:0 }}>AI</span>
           <span style={{ flex:1 }}>
-            <span style={{ display:'block', fontSize:12, fontWeight:500 }}>AIでサイズを自動入力</span>
-            <span style={{ display:'block', fontSize:10, color:'#8a8a8a', marginTop:2 }}>サイズ表のテキストや画像から読み取ります</span>
+            <span style={{ display:'block', fontSize:14, fontWeight:500 }}>AIでサイズを自動入力</span>
+            <span style={{ display:'block', fontSize:12, color:'#8a8a8a', marginTop:3 }}>サイズ表のテキストや画像から読み取ります</span>
           </span>
-          <span style={{ fontSize:14, color:'#cdcac3' }}>›</span>
+          <span style={{ fontSize:18, color:'#cdcac3' }}>›</span>
         </button>
       </div>
 
       <FieldLabel padded>寸法（cm）</FieldLabel>
-      <div style={{ margin:'0 22px 16px', border:'1px solid #ececec', background:'#ffffff' }}>
+      <div style={{ margin:'0 24px 20px', border:'1px solid #ececec', background:'#ffffff' }}>
         {cat.fields.map((f, i) => (
-          <div key={f.key} style={{ display:'flex', alignItems:'center', padding:'12px 14px',
+          <div key={f.key} style={{ display:'flex', alignItems:'center', padding:'16px 18px',
             borderBottom: i < cat.fields.length - 1 ? '1px solid #f0eee9' : 'none',
             background: focusedField === f.key ? '#fbf6f0' : '#ffffff', transition:'background 120ms ease' }}>
-            <div style={{ width:22, height:22, borderRadius:'50%', border:'1px solid #d8d6d2',
+            <div style={{ width:28, height:28, borderRadius:'50%', border:'1px solid #d8d6d2',
               display:'flex', alignItems:'center', justifyContent:'center',
-              fontSize:9, color:'#8a8a8a', marginRight:12, fontFamily:'"Cormorant Garamond",serif' }}>{f.short}</div>
-            <div style={{ flex:1, fontSize:13, color:'#1c1c1c' }}>{f.ja}</div>
+              fontSize:11, color:'#8a8a8a', marginRight:14, fontFamily:'"Cormorant Garamond",serif' }}>{f.short}</div>
+            <div style={{ flex:1, fontSize:15, color:'#1c1c1c' }}>{f.ja}</div>
             <input type="number" inputMode="decimal" step="0.5"
               value={draft.measures?.[f.key] ?? ''} placeholder="—"
               onChange={(e) => updateMeasure(f.key, e.target.value)}
               onFocus={() => setFocusedField(f.key)} onBlur={() => setFocusedField(null)}
-              style={{ width:72, textAlign:'right', border:'none', borderBottom:'1px solid #d8d6d2',
-                background:'transparent', padding:'4px 4px', fontSize:14, fontFamily:'inherit',
+              style={{ width:88, textAlign:'right', border:'none', borderBottom:'1px solid #d8d6d2',
+                background:'transparent', padding:'6px 4px', fontSize:16, fontFamily:'inherit',
                 fontVariantNumeric:'tabular-nums', outline:'none' }} />
-            <div style={{ width:22, fontSize:11, color:'#8a8a8a', textAlign:'right' }}>cm</div>
+            <div style={{ width:28, fontSize:13, color:'#8a8a8a', textAlign:'right' }}>cm</div>
           </div>
         ))}
       </div>
 
-      <div style={{ padding:'0 22px' }}>
+      <div style={{ padding:'0 24px' }}>
         <FieldLabel>メモ（任意）</FieldLabel>
         <textarea value={draft.note||''} onChange={(e) => update({ note:e.target.value })}
           placeholder="例：休日用にゆとりあり"
-          style={{ width:'100%', minHeight:60, padding:'10px 12px', border:'1px solid #e8e6e2',
-            borderRadius:2, fontSize:12, fontFamily:'inherit', color:'#1c1c1c',
+          style={{ width:'100%', minHeight:72, padding:'12px 14px', border:'1px solid #e8e6e2',
+            borderRadius:2, fontSize:14, fontFamily:'inherit', color:'#1c1c1c',
             background:'#ffffff', resize:'none', outline:'none' }} />
       </div>
 
-      <div style={{ padding:'14px 22px 8px' }}>
-        <label style={{ display:'flex', alignItems:'center', gap:10, fontSize:12, color:'#1c1c1c', cursor:'pointer' }}>
+      <div style={{ padding:'18px 24px 10px' }}>
+        <label style={{ display:'flex', alignItems:'center', gap:12, fontSize:14, color:'#1c1c1c', cursor:'pointer', minHeight:44 }}>
           <input type="checkbox" checked={!!draft.primary} onChange={(e) => update({ primary:e.target.checked })}
-            style={{ accentColor:'#1c1c1c', width:16, height:16 }} />
+            style={{ accentColor:'#1c1c1c', width:20, height:20 }} />
           このカテゴリの基準にする（★）
         </label>
       </div>
-      <div style={{ padding:'14px 22px 28px' }}>
+      <div style={{ padding:'18px 24px 32px' }}>
         <PrimaryBtn onClick={() => onSave(draft)}>保存する</PrimaryBtn>
       </div>
     </Chrome>
@@ -1007,26 +1011,37 @@ window.fittoScreens.SetupEditScreen = SetupEditScreen;
 <script type="text/babel">
 function CompareInputScreen({ wardrobe, draft, setDraft, onBack, onCompute }) {
   const { Chrome, NavBtn, PrimaryBtn, CategoryGlyph, FieldLabel, TextField } = window.fittoUI;
-  const { estimateField } = window.fittoData;
   const [pasteOpen, setPasteOpen] = React.useState(false);
-  const [aiFilledKeys, setAiFilledKeys] = React.useState({});
+  const [editingSizeId, setEditingSizeId] = React.useState(null);
 
   const update = (patch) => setDraft({ ...draft, ...patch });
-  const updateMeasure = (k, v) => {
-    const num = v === '' ? undefined : parseFloat(v);
-    update({ measures: { ...draft.measures, [k]: isNaN(num) ? undefined : num } });
-    if (aiFilledKeys[k]) { const next = { ...aiFilledKeys }; delete next[k]; setAiFilledKeys(next); }
-  };
+  const sizes = draft.sizes || [];
 
-  const onAIResult = (result, selectedSize) => {
-    let nextDraft = { ...draft };
-    if (result.category && result.category !== draft.category) { nextDraft.category = result.category; nextDraft.measures = {}; }
-    nextDraft.measures = { ...(nextDraft.measures || {}), ...selectedSize.measures };
-    if (selectedSize.sizeLabel) nextDraft.sizeLabel = selectedSize.sizeLabel;
-    setDraft(nextDraft);
-    setAiFilledKeys(Object.fromEntries(Object.keys(selectedSize.measures).map(k => [k, true])));
+  const onAIResult = (result, selectedSizes) => {
+    let nextSizes = sizes;
+    let nextCategory = draft.category;
+    if (result.category && result.category !== draft.category) {
+      nextCategory = result.category;
+      nextSizes = [];
+    }
+    const additions = selectedSizes.map(s => ({
+      id: 's' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+      sizeLabel: s.sizeLabel || '',
+      measures: { ...s.measures }
+    }));
+    setDraft({ ...draft, category:nextCategory, sizes:[...nextSizes, ...additions], baseId: nextCategory !== draft.category ? null : draft.baseId });
     setPasteOpen(false);
   };
+
+  const addEmptySize = () => {
+    const newSize = { id: 's' + Date.now(), sizeLabel:'', measures:{} };
+    update({ sizes: [...sizes, newSize] });
+    setEditingSizeId(newSize.id);
+  };
+
+  const removeSize = (id) => update({ sizes: sizes.filter(s => s.id !== id) });
+
+  const updateSize = (id, patch) => update({ sizes: sizes.map(s => s.id === id ? { ...s, ...patch } : s) });
 
   const cat = CATEGORIES[draft.category];
   const bases = wardrobe.filter(w => w.category === draft.category).sort((a, b) => (b.primary?1:0) - (a.primary?1:0));
@@ -1036,144 +1051,212 @@ function CompareInputScreen({ wardrobe, draft, setDraft, onBack, onCompute }) {
     if (!draft.baseId && bases[0]) update({ baseId: bases[0].id });
   }, [draft.category]);
 
-  const suggestions = cat.fields
-    .filter(f => draft.measures?.[f.key] === undefined || draft.measures?.[f.key] === null)
-    .map(f => ({ ...f, estimate: estimateField(draft.category, f.key, draft.measures || {}) }))
-    .filter(s => s.estimate !== null);
+  const validSizes = sizes.filter(s => Object.keys(s.measures || {}).length >= 2);
+  const canCompute = validSizes.length >= 1 && baseId;
 
-  const filledCount = cat.fields.filter(f => draft.measures?.[f.key] != null).length;
-  const canCompute = filledCount >= 2 && baseId;
+  const editingSize = editingSizeId ? sizes.find(s => s.id === editingSizeId) : null;
 
   return (
     <>
-    <Chrome title="サイズを入力" leading={<NavBtn onClick={onBack}>‹ 戻る</NavBtn>}
-      trailing={<NavBtn ghost onClick={() => update({ measures:{}, brand:'', sizeLabel:'' })}>クリア</NavBtn>}>
-      <div style={{ padding:'8px 22px 16px' }}>
+    <Chrome title="サイズを比較" leading={<NavBtn onClick={onBack}>‹ 戻る</NavBtn>}
+      trailing={<NavBtn ghost onClick={() => update({ sizes:[], brand:'' })}>クリア</NavBtn>}>
+      <div style={{ padding:'12px 24px 20px' }}>
         <FieldLabel>欲しい服</FieldLabel>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:1, background:'#e8e6e2', border:'1px solid #e8e6e2', marginBottom:16 }}>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:1, background:'#e8e6e2', border:'1px solid #e8e6e2', marginBottom:20 }}>
           {Object.values(CATEGORIES).map(c => {
             const sel = draft.category === c.id;
             return (
-              <button key={c.id} onClick={() => update({ category:c.id, measures:{}, baseId:null })} style={{ appearance:'none', border:'none', cursor:'pointer',
-                padding:'14px 8px', background:sel?'#1c1c1c':'#faf8f4', color:sel?'#faf8f4':'#1c1c1c',
-                fontFamily:'inherit', display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
-                <CategoryGlyph category={c.id} size={22} color={sel?'#faf8f4':'#1c1c1c'} />
-                <span style={{ fontSize:11, letterSpacing:'0.06em' }}>{c.label}</span>
+              <button key={c.id} onClick={() => update({ category:c.id, sizes:[], baseId:null })} style={{ appearance:'none', border:'none', cursor:'pointer',
+                padding:'18px 8px', background:sel?'#1c1c1c':'#faf8f4', color:sel?'#faf8f4':'#1c1c1c',
+                fontFamily:'inherit', display:'flex', flexDirection:'column', alignItems:'center', gap:8, minHeight:80 }}>
+                <CategoryGlyph category={c.id} size={28} color={sel?'#faf8f4':'#1c1c1c'} />
+                <span style={{ fontSize:13, letterSpacing:'0.06em' }}>{c.label}</span>
               </button>
             );
           })}
         </div>
         <TextField label="ブランド・商品名" placeholder="例：Lemaire — Twisted Pants" value={draft.brand||''} onChange={v => update({ brand:v })} />
-        <TextField label="サイズ表記" placeholder="例：46, M" value={draft.sizeLabel||''} onChange={v => update({ sizeLabel:v })} />
-
-        <button onClick={() => setPasteOpen(true)} style={{ appearance:'none', cursor:'pointer', fontFamily:'inherit',
-          width:'100%', padding:'12px 14px', marginTop:6, background:'#ffffff', border:'1px dashed #cdcac3',
-          borderRadius:2, color:'#1c1c1c', textAlign:'left', display:'flex', alignItems:'center', gap:10 }}>
-          <span style={{ width:22, height:22, borderRadius:'50%', background:'#1c1c1c', color:'#faf8f4',
-            display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontFamily:'"Cormorant Garamond",serif' }}>AI</span>
-          <span style={{ flex:1 }}>
-            <span style={{ display:'block', fontSize:12, fontWeight:500 }}>サイズ表を貼り付けて自動入力</span>
-            <span style={{ display:'block', fontSize:10, color:'#8a8a8a', marginTop:2 }}>ECサイトのサイズ表をコピペすると、項目を読み取ります</span>
-          </span>
-          <span style={{ fontSize:14, color:'#cdcac3' }}>›</span>
-        </button>
       </div>
 
-      <div style={{ padding:'0 22px 16px' }}>
-        <FieldLabel>比べる相手（基準）</FieldLabel>
-        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-          {bases.length === 0 && <div style={{ padding:14, border:'1px dashed #d8d6d2', fontSize:12, color:'#8a8a8a', textAlign:'center' }}>このカテゴリの基準が未登録です。設定から登録してください。</div>}
+      <div style={{ padding:'0 24px 20px' }}>
+        <FieldLabel>比べる基準</FieldLabel>
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          {bases.length === 0 && <div style={{ padding:18, border:'1px dashed #d8d6d2', fontSize:14, color:'#8a8a8a', textAlign:'center' }}>このカテゴリの基準が未登録です。設定から登録してください。</div>}
           {bases.map(b => {
             const sel = baseId === b.id;
             return (
               <button key={b.id} onClick={() => update({ baseId:b.id })} style={{ appearance:'none', textAlign:'left',
-                display:'flex', alignItems:'center', gap:12, padding:'12px 14px', cursor:'pointer',
+                display:'flex', alignItems:'center', gap:14, padding:'16px 18px', cursor:'pointer',
                 background:sel?'#1c1c1c':'#ffffff', color:sel?'#faf8f4':'#1c1c1c',
                 border:`1px solid ${sel?'#1c1c1c':'#e8e6e2'}`, fontFamily:'inherit' }}>
-                <span style={{ fontSize:12, opacity:sel?1:0.6 }}>{b.primary?'★':'·'}</span>
+                <span style={{ fontSize:14, opacity:sel?1:0.6 }}>{b.primary?'★':'·'}</span>
                 <span style={{ flex:1 }}>
-                  <span style={{ display:'block', fontSize:13, fontWeight:500 }}>{b.name}</span>
-                  <span style={{ display:'block', fontSize:10, color:sel?'rgba(250,248,244,0.7)':'#8a8a8a' }}>{b.brand} · size {b.sizeLabel}</span>
+                  <span style={{ display:'block', fontSize:15, fontWeight:500 }}>{b.name}</span>
+                  <span style={{ display:'block', fontSize:12, color:sel?'rgba(250,248,244,0.7)':'#8a8a8a', marginTop:2 }}>{b.brand} · size {b.sizeLabel}</span>
                 </span>
-                <span style={{ fontSize:16, opacity:0.5 }}>{sel?'●':'○'}</span>
+                <span style={{ fontSize:18, opacity:0.5 }}>{sel?'●':'○'}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      <div style={{ padding:'0 22px 8px' }}>
-        <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', marginBottom:6 }}>
-          <FieldLabel>商品の寸法（cm）</FieldLabel>
-          <div style={{ fontSize:10, color:'#8a8a8a' }}>{filledCount}/{cat.fields.length} 入力済</div>
+      <div style={{ padding:'0 24px 12px' }}>
+        <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between' }}>
+          <FieldLabel>比較するサイズ</FieldLabel>
+          <div style={{ fontSize:12, color:'#8a8a8a' }}>{sizes.length}件</div>
         </div>
-        <div style={{ background:'#ffffff', border:'1px solid #ececec' }}>
-          {cat.fields.map((f, i) => {
-            const v = draft.measures?.[f.key];
-            const missing = v == null;
-            const est = missing ? estimateField(draft.category, f.key, draft.measures||{}) : null;
-            return (
-              <div key={f.key} style={{ display:'flex', alignItems:'center', padding:'12px 14px',
-                borderBottom: i < cat.fields.length - 1 ? '1px solid #f0eee9' : 'none' }}>
-                <div style={{ width:22, height:22, borderRadius:'50%', border:'1px solid #d8d6d2',
-                  display:'flex', alignItems:'center', justifyContent:'center',
-                  fontSize:9, color:'#8a8a8a', marginRight:12, fontFamily:'"Cormorant Garamond",serif' }}>{f.short}</div>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:13, color:'#1c1c1c', display:'flex', alignItems:'center', gap:6 }}>
-                    {f.ja}
-                    {aiFilledKeys[f.key] && (
-                      <span style={{ fontSize:9, letterSpacing:'0.1em', color:'#1c1c1c',
-                        border:'1px solid #1c1c1c', padding:'1px 5px', fontFamily:'"Cormorant Garamond",serif' }}>AI</span>
-                    )}
+
+        <button onClick={() => setPasteOpen(true)} style={{ appearance:'none', cursor:'pointer', fontFamily:'inherit',
+          width:'100%', padding:'18px 20px', marginBottom:12, background:'#ffffff', border:'1px dashed #cdcac3',
+          borderRadius:2, color:'#1c1c1c', textAlign:'left', display:'flex', alignItems:'center', gap:14, minHeight:72 }}>
+          <span style={{ width:36, height:36, borderRadius:'50%', background:'#1c1c1c', color:'#faf8f4',
+            display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, fontFamily:'"Cormorant Garamond",serif', flexShrink:0 }}>AI</span>
+          <span style={{ flex:1 }}>
+            <span style={{ display:'block', fontSize:15, fontWeight:500 }}>AIで一括読み取り</span>
+            <span style={{ display:'block', fontSize:12, color:'#8a8a8a', marginTop:3 }}>サイズ表のテキストや画像から複数サイズをまとめて取り込み</span>
+          </span>
+          <span style={{ fontSize:18, color:'#cdcac3' }}>›</span>
+        </button>
+
+        {sizes.length === 0 ? (
+          <div style={{ padding:'24px 18px', border:'1px dashed #d8d6d2', borderRadius:2, fontSize:13, color:'#8a8a8a', textAlign:'center', lineHeight:1.7 }}>
+            まだサイズが登録されていません。<br/>AIで読み取るか、下のボタンで手動追加してください。
+          </div>
+        ) : (
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            {sizes.map(s => {
+              const filled = Object.keys(s.measures || {}).length;
+              const total = cat.fields.length;
+              return (
+                <div key={s.id} style={{ background:'#ffffff', border:'1px solid #e8e6e2', padding:'14px 16px',
+                  display:'flex', alignItems:'center', gap:14 }}>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:16, fontWeight:500, color:'#1c1c1c', marginBottom:6 }}>
+                      サイズ {s.sizeLabel || '(未設定)'}
+                    </div>
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                      {filled === 0 ? (
+                        <span style={{ fontSize:12, color:'#b86a4a' }}>項目未入力</span>
+                      ) : (
+                        cat.fields.filter(f => s.measures?.[f.key] != null).slice(0, 4).map(f => (
+                          <span key={f.key} style={{ fontSize:12, padding:'3px 9px', background:'#f3f0ea', color:'#4a4a4a', borderRadius:999, fontVariantNumeric:'tabular-nums' }}>
+                            {f.short} {s.measures[f.key]}
+                          </span>
+                        ))
+                      )}
+                      {filled > 4 && <span style={{ fontSize:12, color:'#8a8a8a' }}>+{filled-4}</span>}
+                    </div>
+                    <div style={{ fontSize:11, color:'#8a8a8a', marginTop:6 }}>{filled}/{total} 項目</div>
                   </div>
-                  {missing && est != null && (
-                    <button onClick={() => updateMeasure(f.key, est)} style={{ appearance:'none', border:'none',
-                      background:'transparent', padding:'2px 0', marginTop:2, cursor:'pointer',
-                      fontSize:10, color:'#b86a4a', fontFamily:'inherit' }}>推定 {est}cm を使う ›</button>
-                  )}
+                  <button onClick={() => setEditingSizeId(s.id)} style={{ appearance:'none', border:'1px solid #d8d6d2',
+                    background:'#ffffff', color:'#1c1c1c', padding:'10px 14px', fontSize:13, fontFamily:'inherit',
+                    cursor:'pointer', borderRadius:2, minHeight:44 }}>編集</button>
+                  <button onClick={() => removeSize(s.id)} style={{ appearance:'none', border:'none',
+                    background:'transparent', color:'#b86a4a', padding:'10px 8px', fontSize:13, fontFamily:'inherit',
+                    cursor:'pointer', minHeight:44 }}>削除</button>
                 </div>
-                <input type="number" inputMode="decimal" step="0.5" value={v??''} placeholder="—"
-                  onChange={(e) => updateMeasure(f.key, e.target.value)}
-                  style={{ width:72, textAlign:'right', border:'none', borderBottom:'1px solid #d8d6d2',
-                    background:'transparent', padding:'4px 4px', fontSize:14, fontFamily:'inherit',
-                    fontVariantNumeric:'tabular-nums', color:'#1c1c1c', outline:'none' }} />
-                <div style={{ width:22, fontSize:11, color:'#8a8a8a', textAlign:'right' }}>cm</div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
+
+        <button onClick={addEmptySize} style={{ appearance:'none', cursor:'pointer', fontFamily:'inherit',
+          width:'100%', padding:'14px 16px', marginTop:12, background:'transparent', border:'1px solid #d8d6d2',
+          borderRadius:2, color:'#1c1c1c', fontSize:14, fontWeight:500, letterSpacing:'0.04em', minHeight:48 }}>
+          ＋ サイズを手で追加
+        </button>
       </div>
 
-      {suggestions.length > 0 && filledCount >= 2 && (
-        <div style={{ margin:'14px 22px 8px', padding:'14px', background:'#fbf6f0', border:'1px solid #f1e2d3' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
-            <span style={{ fontSize:14 }}>◇</span>
-            <div style={{ fontSize:11, letterSpacing:'0.16em', color:'#b86a4a', textTransform:'uppercase', fontWeight:500 }}>推定で補完できます</div>
-          </div>
-          <div style={{ fontSize:11, color:'#4a4a4a', lineHeight:1.7, marginBottom:10 }}>ECサイトに記載がない項目は、入力済の値から目安を推定できます。</div>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-            {suggestions.map(s => (
-              <button key={s.key} onClick={() => updateMeasure(s.key, s.estimate)} style={{ appearance:'none',
-                border:'1px solid #e8c7b6', background:'#ffffff', color:'#b86a4a',
-                padding:'6px 12px', fontSize:11, cursor:'pointer', borderRadius:999, fontFamily:'inherit' }}>
-                {s.ja} ≈ {s.estimate}cm
-              </button>
-            ))}
-            <button onClick={() => { const next={...(draft.measures||{})}; suggestions.forEach(s=>{ next[s.key]=s.estimate; }); update({ measures:next }); }}
-              style={{ appearance:'none', border:'none', background:'#1c1c1c', color:'#faf8f4',
-                padding:'6px 12px', fontSize:11, cursor:'pointer', borderRadius:999, fontFamily:'inherit' }}>すべて補完</button>
-          </div>
-        </div>
-      )}
-
-      <div style={{ padding:'14px 22px 28px' }}>
-        <PrimaryBtn onClick={onCompute} disabled={!canCompute}>このサイズで判定する</PrimaryBtn>
+      <div style={{ padding:'18px 24px 32px' }}>
+        <PrimaryBtn onClick={onCompute} disabled={!canCompute}>
+          {validSizes.length > 1 ? `${validSizes.length}サイズを比較する` : 'このサイズで判定する'}
+        </PrimaryBtn>
       </div>
     </Chrome>
     {pasteOpen && (
       <PasteSizeTableModal hintCategory={draft.category} onClose={() => setPasteOpen(false)} onResult={onAIResult} />
     )}
+    {editingSize && (
+      <SizeEditModal size={editingSize} category={draft.category}
+        onClose={() => setEditingSizeId(null)}
+        onSave={(patch) => { updateSize(editingSize.id, patch); setEditingSizeId(null); }} />
+    )}
     </>
+  );
+}
+
+function SizeEditModal({ size, category, onClose, onSave }) {
+  const [draft, setDraft] = React.useState(() => ({ sizeLabel: size.sizeLabel || '', measures: { ...(size.measures || {}) } }));
+  const cat = CATEGORIES[category];
+  const { estimateField } = window.fittoData;
+  const updateMeasure = (k, v) => {
+    const num = v === '' ? undefined : parseFloat(v);
+    setDraft(d => ({ ...d, measures: { ...d.measures, [k]: isNaN(num) ? undefined : num } }));
+  };
+  const suggestions = cat.fields
+    .filter(f => draft.measures?.[f.key] === undefined || draft.measures?.[f.key] === null)
+    .map(f => ({ ...f, estimate: estimateField(category, f.key, draft.measures || {}) }))
+    .filter(s => s.estimate !== null);
+
+  return (
+    <div style={{ position:'absolute', inset:0, zIndex:100, background:'rgba(28,28,28,0.45)',
+      display:'flex', alignItems:'flex-end', justifyContent:'center' }}>
+      <div style={{ width:'100%', background:'#faf8f4', borderTopLeftRadius:16, borderTopRightRadius:16,
+        padding:'18px 22px 24px', maxHeight:'92%', overflowY:'auto' }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+          <div style={{ fontFamily:'"Cormorant Garamond","Noto Sans JP",serif', fontSize:22, fontWeight:500, color:'#1c1c1c' }}>サイズを編集</div>
+          <button onClick={onClose} style={{ appearance:'none', border:'none', background:'transparent', fontSize:15, color:'#8a8a8a', cursor:'pointer', padding:8 }}>閉じる</button>
+        </div>
+        <div style={{ marginBottom:14 }}>
+          <div style={{ fontSize:11, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase', marginBottom:8 }}>サイズ表記</div>
+          <input type="text" value={draft.sizeLabel} placeholder="例：M, 46" onChange={(e) => setDraft(d => ({ ...d, sizeLabel:e.target.value }))}
+            style={{ width:'100%', border:'none', borderBottom:'1px solid #d8d6d2', background:'transparent',
+              padding:'12px 2px', fontSize:16, fontFamily:'inherit', color:'#1c1c1c', outline:'none' }} />
+        </div>
+        <div style={{ fontSize:11, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase', marginBottom:8 }}>寸法（cm）</div>
+        <div style={{ background:'#ffffff', border:'1px solid #ececec', marginBottom:14 }}>
+          {cat.fields.map((f, i) => (
+            <div key={f.key} style={{ display:'flex', alignItems:'center', padding:'14px 16px',
+              borderBottom: i < cat.fields.length - 1 ? '1px solid #f0eee9' : 'none' }}>
+              <div style={{ width:28, height:28, borderRadius:'50%', border:'1px solid #d8d6d2',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                fontSize:11, color:'#8a8a8a', marginRight:12, fontFamily:'"Cormorant Garamond",serif' }}>{f.short}</div>
+              <div style={{ flex:1, fontSize:15, color:'#1c1c1c' }}>{f.ja}</div>
+              <input type="number" inputMode="decimal" step="0.5" value={draft.measures?.[f.key] ?? ''} placeholder="—"
+                onChange={(e) => updateMeasure(f.key, e.target.value)}
+                style={{ width:80, textAlign:'right', border:'none', borderBottom:'1px solid #d8d6d2',
+                  background:'transparent', padding:'6px 4px', fontSize:16, fontFamily:'inherit',
+                  fontVariantNumeric:'tabular-nums', color:'#1c1c1c', outline:'none' }} />
+              <div style={{ width:28, fontSize:13, color:'#8a8a8a', textAlign:'right' }}>cm</div>
+            </div>
+          ))}
+        </div>
+        {suggestions.length > 0 && (
+          <div style={{ padding:'12px 14px', background:'#fbf6f0', border:'1px solid #f1e2d3', marginBottom:14 }}>
+            <div style={{ fontSize:11, letterSpacing:'0.16em', color:'#b86a4a', textTransform:'uppercase', marginBottom:8 }}>推定で補完</div>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+              {suggestions.map(s => (
+                <button key={s.key} onClick={() => updateMeasure(s.key, s.estimate)} style={{ appearance:'none',
+                  border:'1px solid #e8c7b6', background:'#ffffff', color:'#b86a4a',
+                  padding:'8px 14px', fontSize:13, cursor:'pointer', borderRadius:999, fontFamily:'inherit' }}>
+                  {s.ja} ≈ {s.estimate}cm
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        <div style={{ display:'flex', gap:10 }}>
+          <button onClick={onClose} style={{ appearance:'none', cursor:'pointer', flex:1, background:'transparent',
+            color:'#1c1c1c', border:'1px solid #d8d6d2', borderRadius:2, padding:'14px 18px', fontSize:15, fontFamily:'inherit', minHeight:52 }}>キャンセル</button>
+          <button onClick={() => onSave(draft)} style={{ appearance:'none', cursor:'pointer', flex:2,
+            background:'#1c1c1c', color:'#faf8f4', border:'none', borderRadius:2,
+            padding:'14px 18px', fontSize:15, fontWeight:500, letterSpacing:'0.06em', fontFamily:'inherit', minHeight:52 }}>
+            保存する
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1184,11 +1267,11 @@ function PasteSizeTableModal({ hintCategory, onClose, onResult }) {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
   const [preview, setPreview] = React.useState(null);
-  const [selectedIdx, setSelectedIdx] = React.useState(0);
+  const [selectedIdxs, setSelectedIdxs] = React.useState({});
   const fileInputRef = React.useRef(null);
   const pasteAreaRef = React.useRef(null);
 
-  const resetPreview = () => { setPreview(null); setError(null); setSelectedIdx(0); };
+  const resetPreview = () => { setPreview(null); setError(null); setSelectedIdxs({}); };
 
   const processImageFile = (file) => {
     if (!file || !file.type.startsWith('image/')) { setError('画像ファイルを選択してください'); return; }
@@ -1219,12 +1302,18 @@ function PasteSizeTableModal({ hintCategory, onClose, onResult }) {
     return () => el.removeEventListener('paste', onPaste);
   }, [tab]);
 
+  const initSelections = (sizes) => {
+    const init = {};
+    sizes.forEach((s, i) => { if (Object.keys(s.measures).length > 0) init[i] = true; });
+    return init;
+  };
+
   const onParse = async () => {
     if (!text.trim()) return;
     setLoading(true); setError(null); setPreview(null);
     try {
       const result = await window.fittoLLM.parseSizeTable(text, hintCategory);
-      setPreview(result); setSelectedIdx(0);
+      setPreview(result); setSelectedIdxs(initSelections(result.sizes || []));
     } catch (e) { setError(e.message || '読み取りに失敗しました'); }
     finally { setLoading(false); }
   };
@@ -1234,77 +1323,85 @@ function PasteSizeTableModal({ hintCategory, onClose, onResult }) {
     setLoading(true); setError(null); setPreview(null);
     try {
       const result = await window.fittoLLM.parseSizeTableFromImage(imageData.base64, imageData.mimeType, hintCategory);
-      setPreview(result); setSelectedIdx(0);
+      setPreview(result); setSelectedIdxs(initSelections(result.sizes || []));
     } catch (e) { setError(e.message || '画像の読み取りに失敗しました'); }
     finally { setLoading(false); }
+  };
+
+  const toggleSize = (i) => setSelectedIdxs(prev => ({ ...prev, [i]: !prev[i] }));
+  const toggleAll = () => {
+    if (!preview) return;
+    const allOn = preview.sizes.every((_, i) => selectedIdxs[i]);
+    if (allOn) setSelectedIdxs({});
+    else setSelectedIdxs(initSelections(preview.sizes));
   };
 
   const fieldJa = { waist:'ウエスト', hip:'ヒップ', thigh:'もも幅', rise:'股上', hem:'裾幅', inseam:'股下',
     shoulder:'肩幅', chest:'身幅', length:'着丈', sleeve:'袖丈', cuff:'袖口', neck:'首回り' };
   const catLabel = { pants:'ボトムス', tops:'トップス', outer:'アウター' };
-  const selected = preview?.sizes?.[selectedIdx];
+  const selectedSizes = preview ? preview.sizes.filter((_, i) => selectedIdxs[i]) : [];
 
   const tabStyle = (active) => ({
     flex:1, appearance:'none', border:'none', borderBottom: active ? '2px solid #1c1c1c' : '2px solid transparent',
-    background:'transparent', padding:'8px 0', fontSize:12, fontWeight:active?600:400,
-    color: active ? '#1c1c1c' : '#8a8a8a', cursor:'pointer', fontFamily:'inherit', letterSpacing:'0.04em'
+    background:'transparent', padding:'12px 0', fontSize:14, fontWeight:active?600:400,
+    color: active ? '#1c1c1c' : '#8a8a8a', cursor:'pointer', fontFamily:'inherit', letterSpacing:'0.04em', minHeight:48
   });
 
   return (
     <div style={{ position:'absolute', inset:0, zIndex:100, background:'rgba(28,28,28,0.45)',
       display:'flex', alignItems:'flex-end', justifyContent:'center' }}>
       <div style={{ width:'100%', background:'#faf8f4', borderTopLeftRadius:16, borderTopRightRadius:16,
-        padding:'14px 18px 22px', maxHeight:'92%', overflowY:'auto' }}>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <span style={{ width:22, height:22, borderRadius:'50%', background:'#1c1c1c', color:'#faf8f4',
-              display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontFamily:'"Cormorant Garamond",serif' }}>AI</span>
-            <div style={{ fontFamily:'"Cormorant Garamond","Noto Sans JP",serif', fontSize:18, fontWeight:500, color:'#1c1c1c' }}>AIでサイズを読み取る</div>
+        padding:'18px 22px 26px', maxHeight:'92%', overflowY:'auto' }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <span style={{ width:28, height:28, borderRadius:'50%', background:'#1c1c1c', color:'#faf8f4',
+              display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontFamily:'"Cormorant Garamond",serif' }}>AI</span>
+            <div style={{ fontFamily:'"Cormorant Garamond","Noto Sans JP",serif', fontSize:22, fontWeight:500, color:'#1c1c1c' }}>AIでサイズを読み取る</div>
           </div>
-          <button onClick={onClose} style={{ appearance:'none', border:'none', background:'transparent', fontSize:13, color:'#8a8a8a', cursor:'pointer', padding:4 }}>閉じる</button>
+          <button onClick={onClose} style={{ appearance:'none', border:'none', background:'transparent', fontSize:15, color:'#8a8a8a', cursor:'pointer', padding:8 }}>閉じる</button>
         </div>
 
-        <div style={{ display:'flex', borderBottom:'1px solid #e8e6e2', marginBottom:14 }}>
+        <div style={{ display:'flex', borderBottom:'1px solid #e8e6e2', marginBottom:18 }}>
           <button style={tabStyle(tab==='text')} onClick={() => { setTab('text'); resetPreview(); }}>テキスト</button>
           <button style={tabStyle(tab==='image')} onClick={() => { setTab('image'); resetPreview(); }}>画像</button>
         </div>
 
         {tab === 'text' && (
           <>
-            <div style={{ fontSize:11, color:'#4a4a4a', lineHeight:1.7, marginBottom:10 }}>ECサイトのサイズ表をコピーしてペーストしてください。</div>
+            <div style={{ fontSize:13, color:'#4a4a4a', lineHeight:1.7, marginBottom:12 }}>ECサイトのサイズ表をコピーしてペーストしてください。</div>
             <textarea value={text} onChange={(e) => setText(e.target.value)}
               placeholder={'例：\nサイズ  ウエスト  ヒップ  股上  股下  もも幅  裾幅\nS      78      101    26    60    29    15.5'}
-              style={{ width:'100%', minHeight:140, padding:'10px 12px', border:'1px solid #e8e6e2', borderRadius:2,
-                fontSize:12, fontFamily:'ui-monospace,"SF Mono",Menlo,monospace', color:'#1c1c1c',
+              style={{ width:'100%', minHeight:160, padding:'12px 14px', border:'1px solid #e8e6e2', borderRadius:2,
+                fontSize:14, fontFamily:'ui-monospace,"SF Mono",Menlo,monospace', color:'#1c1c1c',
                 background:'#ffffff', resize:'vertical', outline:'none', boxSizing:'border-box' }} />
           </>
         )}
 
         {tab === 'image' && (
           <>
-            <div style={{ fontSize:11, color:'#4a4a4a', lineHeight:1.7, marginBottom:10 }}>
+            <div style={{ fontSize:13, color:'#4a4a4a', lineHeight:1.7, marginBottom:12 }}>
               サイズ表の画像を読み込んでください。スクリーンショットのペースト、カメラ撮影、ファイル選択が使えます。
             </div>
             <div ref={pasteAreaRef} tabIndex={0}
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => { e.preventDefault(); processImageFile(e.dataTransfer.files[0]); }}
-              style={{ width:'100%', minHeight:140, border:'1px dashed #cdcac3', borderRadius:2, background:'#ffffff',
+              style={{ width:'100%', minHeight:160, border:'1px dashed #cdcac3', borderRadius:2, background:'#ffffff',
                 display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
-                gap:10, boxSizing:'border-box', outline:'none', cursor:'default',
+                gap:14, boxSizing:'border-box', outline:'none', cursor:'default', padding:'16px',
                 overflow:'hidden', position:'relative' }}>
               {imageData ? (
                 <>
-                  <img src={imageData.preview} alt="" style={{ maxWidth:'100%', maxHeight:200, objectFit:'contain' }} />
+                  <img src={imageData.preview} alt="" style={{ maxWidth:'100%', maxHeight:240, objectFit:'contain' }} />
                   <button onClick={() => setImageData(null)} style={{ appearance:'none', border:'none', background:'rgba(28,28,28,0.6)', color:'#fff',
-                    padding:'4px 10px', borderRadius:999, fontSize:11, cursor:'pointer', fontFamily:'inherit' }}>削除</button>
+                    padding:'6px 14px', borderRadius:999, fontSize:13, cursor:'pointer', fontFamily:'inherit' }}>削除</button>
                 </>
               ) : (
                 <>
-                  <div style={{ fontSize:11, color:'#8a8a8a', textAlign:'center', lineHeight:1.8 }}>
+                  <div style={{ fontSize:13, color:'#8a8a8a', textAlign:'center', lineHeight:1.8 }}>
                     ここに画像をペースト<br/>またはドロップ
                   </div>
                   <button onClick={() => fileInputRef.current?.click()} style={{ appearance:'none', cursor:'pointer', fontFamily:'inherit',
-                    padding:'8px 18px', background:'#1c1c1c', color:'#faf8f4', border:'none', borderRadius:2, fontSize:12 }}>
+                    padding:'12px 24px', background:'#1c1c1c', color:'#faf8f4', border:'none', borderRadius:2, fontSize:14, minHeight:48 }}>
                     カメラ / ファイルを選択
                   </button>
                 </>
@@ -1314,69 +1411,92 @@ function PasteSizeTableModal({ hintCategory, onClose, onResult }) {
               style={{ display:'none' }} onChange={(e) => processImageFile(e.target.files?.[0])} />
           </>
         )}
-        {error && <div style={{ marginTop:10, padding:'10px 12px', background:'#fbf3ee', border:'1px solid #e8c7b6', color:'#b86a4a', fontSize:11, lineHeight:1.6 }}>{error}</div>}
+        {error && <div style={{ marginTop:12, padding:'12px 14px', background:'#fbf3ee', border:'1px solid #e8c7b6', color:'#b86a4a', fontSize:13, lineHeight:1.6 }}>{error}</div>}
         {preview && (
-          <div style={{ marginTop:12, padding:'12px 14px', background:'#ffffff', border:'1px solid #ececec' }}>
-            <div style={{ display:'flex', gap:8, alignItems:'baseline', marginBottom:8 }}>
-              <div style={{ fontSize:10, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase' }}>読み取り結果</div>
+          <div style={{ marginTop:14, padding:'14px 16px', background:'#ffffff', border:'1px solid #ececec' }}>
+            <div style={{ display:'flex', gap:10, alignItems:'baseline', marginBottom:10 }}>
+              <div style={{ fontSize:11, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase' }}>読み取り結果</div>
               <div style={{ flex:1, height:1, background:'#e8e6e2' }} />
-              <div style={{ fontSize:10, color:'#8a8a8a' }}>信頼度: {preview.confidence}</div>
+              <div style={{ fontSize:12, color:'#8a8a8a' }}>信頼度: {preview.confidence}</div>
             </div>
-            <div style={{ fontSize:12, color:'#1c1c1c', marginBottom:10 }}><span style={{ color:'#8a8a8a' }}>カテゴリ: </span>{catLabel[preview.category]}</div>
-            {preview.sizes.length > 1 && (
-              <div style={{ marginBottom:10 }}>
-                <div style={{ fontSize:10, letterSpacing:'0.16em', color:'#8a8a8a', textTransform:'uppercase', marginBottom:6 }}>使うサイズを選択</div>
-                <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+            <div style={{ fontSize:14, color:'#1c1c1c', marginBottom:14 }}><span style={{ color:'#8a8a8a' }}>カテゴリ: </span>{catLabel[preview.category]}</div>
+
+            {preview.sizes.length === 0 ? (
+              <div style={{ fontSize:13, color:'#b86a4a', padding:'10px 0' }}>サイズが読み取れませんでした</div>
+            ) : (
+              <>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+                  <div style={{ fontSize:11, letterSpacing:'0.16em', color:'#8a8a8a', textTransform:'uppercase' }}>使うサイズを選択（複数可）</div>
+                  <button onClick={toggleAll} style={{ appearance:'none', border:'none', background:'transparent',
+                    color:'#1c1c1c', fontSize:12, cursor:'pointer', fontFamily:'inherit', padding:'6px 10px' }}>
+                    {preview.sizes.every((_, i) => selectedIdxs[i]) ? '全解除' : '全選択'}
+                  </button>
+                </div>
+                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                   {preview.sizes.map((s, i) => {
-                    const sel = selectedIdx === i;
+                    const sel = !!selectedIdxs[i];
+                    const empty = Object.keys(s.measures).length === 0;
                     return (
-                      <button key={i} onClick={() => setSelectedIdx(i)} style={{ appearance:'none', cursor:'pointer', fontFamily:'inherit',
-                        padding:'6px 14px', fontSize:12, fontWeight:500,
+                      <label key={i} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 14px', cursor: empty?'default':'pointer',
                         background:sel?'#1c1c1c':'#ffffff', color:sel?'#faf8f4':'#1c1c1c',
-                        border:`1px solid ${sel?'#1c1c1c':'#d8d6d2'}`, borderRadius:999 }}>
-                        {s.sizeLabel||`#${i+1}`}{s.isRange&&<span style={{ marginLeft:4, opacity:0.6, fontSize:10 }}>±</span>}
-                      </button>
+                        border:`1px solid ${sel?'#1c1c1c':'#d8d6d2'}`, opacity: empty ? 0.5 : 1 }}>
+                        <input type="checkbox" checked={sel} disabled={empty} onChange={() => toggleSize(i)}
+                          style={{ accentColor:sel?'#faf8f4':'#1c1c1c', width:20, height:20 }} />
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:15, fontWeight:500, marginBottom:4 }}>
+                            サイズ {s.sizeLabel || `#${i+1}`}
+                            {s.isRange && <span style={{ marginLeft:6, opacity:0.6, fontSize:11 }}>±範囲</span>}
+                          </div>
+                          <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
+                            {empty ? (
+                              <span style={{ fontSize:12, opacity:0.7 }}>項目読み取り失敗</span>
+                            ) : (
+                              Object.entries(s.measures).slice(0, 5).map(([k, v]) => (
+                                <span key={k} style={{ fontSize:11, padding:'2px 8px',
+                                  background: sel ? 'rgba(250,248,244,0.15)' : '#f3f0ea',
+                                  color: sel ? 'rgba(250,248,244,0.9)' : '#4a4a4a',
+                                  borderRadius:999, fontVariantNumeric:'tabular-nums' }}>
+                                  {fieldJa[k]||k} {v}
+                                </span>
+                              ))
+                            )}
+                            {Object.keys(s.measures).length > 5 && <span style={{ fontSize:11, opacity:0.6 }}>+{Object.keys(s.measures).length-5}</span>}
+                          </div>
+                        </div>
+                      </label>
                     );
                   })}
                 </div>
-              </div>
+              </>
             )}
-            {selected && (
-              <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:10 }}>
-                {Object.entries(selected.measures).map(([k, v]) => (
-                  <span key={k} style={{ fontSize:11, padding:'4px 10px', background:'#f3f0ea', color:'#1c1c1c', borderRadius:999, fontVariantNumeric:'tabular-nums' }}>
-                    {fieldJa[k]||k} {v}cm
-                  </span>
-                ))}
-                {Object.keys(selected.measures).length === 0 && <span style={{ fontSize:11, color:'#b86a4a' }}>項目を読み取れませんでした</span>}
-              </div>
-            )}
-            {preview.notes && <div style={{ fontSize:10, color:'#8a8a8a', lineHeight:1.6 }}>※ {preview.notes}</div>}
+            {preview.notes && <div style={{ fontSize:11, color:'#8a8a8a', lineHeight:1.6, marginTop:10 }}>※ {preview.notes}</div>}
           </div>
         )}
-        <div style={{ display:'flex', gap:10, marginTop:14 }}>
+        <div style={{ display:'flex', gap:10, marginTop:18 }}>
           <button onClick={onClose} style={{ appearance:'none', cursor:'pointer', flex:1, background:'transparent',
-            color:'#1c1c1c', border:'1px solid #d8d6d2', borderRadius:2, padding:'12px 16px', fontSize:13, fontFamily:'inherit' }}>キャンセル</button>
+            color:'#1c1c1c', border:'1px solid #d8d6d2', borderRadius:2, padding:'14px 18px', fontSize:15, fontFamily:'inherit', minHeight:52 }}>キャンセル</button>
           {!preview ? (
             tab === 'text' ? (
               <button onClick={onParse} disabled={loading||!text.trim()} style={{ appearance:'none', cursor:loading?'default':'pointer', flex:2,
                 background:loading||!text.trim()?'#cdcac3':'#1c1c1c', color:'#faf8f4', border:'none', borderRadius:2,
-                padding:'12px 16px', fontSize:13, fontWeight:500, letterSpacing:'0.06em', fontFamily:'inherit' }}>
+                padding:'14px 18px', fontSize:15, fontWeight:500, letterSpacing:'0.06em', fontFamily:'inherit', minHeight:52 }}>
                 {loading?'読み取り中…':'AIで読み取る'}
               </button>
             ) : (
               <button onClick={onParseImage} disabled={loading||!imageData} style={{ appearance:'none', cursor:loading?'default':'pointer', flex:2,
                 background:loading||!imageData?'#cdcac3':'#1c1c1c', color:'#faf8f4', border:'none', borderRadius:2,
-                padding:'12px 16px', fontSize:13, fontWeight:500, letterSpacing:'0.06em', fontFamily:'inherit' }}>
+                padding:'14px 18px', fontSize:15, fontWeight:500, letterSpacing:'0.06em', fontFamily:'inherit', minHeight:52 }}>
                 {loading?'解析中…':'画像を解析する'}
               </button>
             )
           ) : (
-            <button onClick={() => onResult(preview, selected)}
-              disabled={!selected||Object.keys(selected.measures).length===0} style={{ appearance:'none', cursor:'pointer', flex:2,
-              background:!selected||Object.keys(selected.measures).length===0?'#cdcac3':'#1c1c1c',
-              color:'#faf8f4', border:'none', borderRadius:2, padding:'12px 16px', fontSize:13, fontWeight:500,
-              letterSpacing:'0.06em', fontFamily:'inherit' }}>このサイズで入力する</button>
+            <button onClick={() => onResult(preview, selectedSizes)}
+              disabled={selectedSizes.length === 0} style={{ appearance:'none', cursor:'pointer', flex:2,
+              background:selectedSizes.length === 0 ?'#cdcac3':'#1c1c1c',
+              color:'#faf8f4', border:'none', borderRadius:2, padding:'14px 18px', fontSize:15, fontWeight:500,
+              letterSpacing:'0.06em', fontFamily:'inherit', minHeight:52 }}>
+              {selectedSizes.length > 0 ? `${selectedSizes.length}件を追加する` : 'サイズを選択してください'}
+            </button>
           )}
         </div>
       </div>
@@ -1389,55 +1509,168 @@ window.fittoScreens.CompareInputScreen = CompareInputScreen;
 
 <!-- ── screens-result ── -->
 <script type="text/babel">
-function ResultScreen({ base, candidate, judgementUI, showLabels, onBack, onSave, onChangeBase }) {
+function ResultScreen({ base, candidate, wardrobe, judgementUI, showLabels, onBack, onSave, onChangeBase }) {
   const { Chrome, NavBtn, PrimaryBtn, GhostBtn, VerdictPill } = window.fittoUI;
-  const { compareItem, verdict, TOLERANCE } = window.fittoData;
+  const { compareItem, verdict } = window.fittoData;
   const { FigureCompare } = window.fittoFigure;
   const cat = CATEGORIES[candidate.category];
-  const rows = compareItem(base, candidate);
-  const v = verdict(rows);
+  const sizes = (candidate.sizes || []).filter(s => Object.keys(s.measures || {}).length >= 2);
+  const [expandedId, setExpandedId] = React.useState(null);
+
+  const sizeResults = sizes.map(s => {
+    const rows = compareItem(base, { category: candidate.category, measures: s.measures });
+    const v = verdict(rows);
+    return { size: s, rows, verdict: v };
+  }).sort((a, b) => (b.verdict.score || 0) - (a.verdict.score || 0));
+
+  React.useEffect(() => {
+    if (sizeResults.length > 0 && !expandedId) setExpandedId(sizeResults[0].size.id);
+  }, []);
+
+  const sameCatBases = wardrobe.filter(w => w.category === candidate.category);
+  const baseScores = sameCatBases.map(b => {
+    const scores = sizes.map(s => verdict(compareItem(b, { category: candidate.category, measures: s.measures })).score || 0);
+    return { base: b, score: Math.max(...scores, 0) };
+  }).sort((a, b) => b.score - a.score);
+  const currentScore = baseScores.find(bs => bs.base.id === base.id)?.score ?? 0;
+  const recommended = baseScores[0];
+  const showRecommend = recommended && recommended.base.id !== base.id && (recommended.score - currentScore > 5);
+
+  const toneBg = { ok:'#1c1c1c', soft:'#6b7c5a', warn:'#b86a4a', bad:'#8a3a1c', neutral:'#cdcac3' };
 
   return (
     <Chrome title="比較結果" leading={<NavBtn onClick={onBack}>‹ 戻る</NavBtn>} trailing={<NavBtn ghost onClick={onSave}>保存</NavBtn>}>
-      <div style={{ padding:'6px 22px 10px' }}>
-        <div style={{ display:'flex', alignItems:'stretch', gap:8, fontSize:11, color:'#8a8a8a' }}>
+      <div style={{ padding:'10px 24px 14px' }}>
+        <div style={{ display:'flex', alignItems:'stretch', gap:10 }}>
           <button onClick={onChangeBase} style={{ appearance:'none', border:'1px solid #e8e6e2', background:'#ffffff',
-            flex:1, padding:'10px 12px', textAlign:'left', cursor:'pointer', fontFamily:'inherit' }}>
-            <div style={{ fontSize:9, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase' }}>BASE ★</div>
-            <div style={{ fontSize:12, color:'#1c1c1c', fontWeight:500, marginTop:3, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{base.name}</div>
-            <div style={{ fontSize:10, color:'#8a8a8a', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{base.brand} · {base.sizeLabel}</div>
+            flex:1, padding:'14px 16px', textAlign:'left', cursor:'pointer', fontFamily:'inherit', minHeight:72 }}>
+            <div style={{ fontSize:11, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase' }}>BASE ★</div>
+            <div style={{ fontSize:14, color:'#1c1c1c', fontWeight:500, marginTop:4, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{base.name}</div>
+            <div style={{ fontSize:12, color:'#8a8a8a', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', marginTop:2 }}>{base.brand} · {base.sizeLabel}</div>
           </button>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'center', width:30, fontSize:18, color:'#cdcac3', fontFamily:'"Cormorant Garamond",serif' }}>↔</div>
-          <div style={{ background:'#1c1c1c', color:'#faf8f4', flex:1, padding:'10px 12px' }}>
-            <div style={{ fontSize:9, letterSpacing:'0.18em', color:'rgba(250,248,244,0.6)', textTransform:'uppercase' }}>CANDIDATE</div>
-            <div style={{ fontSize:12, fontWeight:500, marginTop:3, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{candidate.brand||'商品名未設定'}</div>
-            <div style={{ fontSize:10, color:'rgba(250,248,244,0.6)' }}>size {candidate.sizeLabel||'—'}</div>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'center', width:32, fontSize:22, color:'#cdcac3', fontFamily:'"Cormorant Garamond",serif' }}>↔</div>
+          <div style={{ background:'#1c1c1c', color:'#faf8f4', flex:1, padding:'14px 16px' }}>
+            <div style={{ fontSize:11, letterSpacing:'0.18em', color:'rgba(250,248,244,0.6)', textTransform:'uppercase' }}>CANDIDATE</div>
+            <div style={{ fontSize:14, fontWeight:500, marginTop:4, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{candidate.brand||'商品名未設定'}</div>
+            <div style={{ fontSize:12, color:'rgba(250,248,244,0.6)', marginTop:2 }}>{sizes.length}サイズ比較中</div>
           </div>
         </div>
       </div>
 
-      <div style={{ margin:'4px 12px 0', padding:'8px 0', background:'#fbfaf6', borderTop:'1px solid #ececec', borderBottom:'1px solid #ececec', position:'relative' }}>
-        <FigureCompare category={candidate.category} rows={rows} showLabels={showLabels} height={360} />
-        <div style={{ position:'absolute', bottom:12, left:0, right:0, display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
-          <div style={{ fontSize:10, letterSpacing:'0.2em', color:'#8a8a8a', textTransform:'uppercase' }}>Verdict</div>
-          <VerdictPill tone={v.tone}>{v.label}</VerdictPill>
+      {showRecommend && (
+        <div style={{ margin:'6px 24px 14px', padding:'14px 16px', background:'#fbf6f0', border:'1px solid #f1e2d3' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
+            <span style={{ fontSize:14 }}>★</span>
+            <div style={{ fontSize:11, letterSpacing:'0.16em', color:'#b86a4a', textTransform:'uppercase', fontWeight:500 }}>もっと近い基準があります</div>
+          </div>
+          <div style={{ fontSize:14, color:'#1c1c1c', lineHeight:1.6, marginBottom:12 }}>
+            <span style={{ fontWeight:500 }}>{recommended.base.name}</span> の方が近そうです（スコア {recommended.score} vs 現在 {currentScore}）
+          </div>
+          <button onClick={() => onChangeBase()} style={{ appearance:'none', border:'1px solid #b86a4a', background:'#ffffff',
+            color:'#b86a4a', padding:'10px 16px', fontSize:13, fontWeight:500, cursor:'pointer', fontFamily:'inherit',
+            borderRadius:2, minHeight:44 }}>
+            こちらに切り替える ›
+          </button>
         </div>
-      </div>
+      )}
 
-      <div style={{ padding:'18px 22px 4px' }}>
-        {judgementUI === 'label' && <VerdictLabelView v={v} />}
-        {judgementUI === 'score' && <VerdictScoreView v={v} rows={rows} />}
-        {judgementUI === 'breakdown' && <VerdictBreakdownView v={v} rows={rows} cat={cat} />}
-        {(judgementUI === 'all' || !judgementUI) && (
-          <>
-            <VerdictLabelView v={v} compact />
-            <VerdictScoreView v={v} rows={rows} compact />
-            <VerdictBreakdownView v={v} rows={rows} cat={cat} />
-          </>
-        )}
-      </div>
+      {sizeResults.length === 0 ? (
+        <div style={{ padding:'40px 24px', textAlign:'center', fontSize:14, color:'#8a8a8a' }}>
+          比較できるサイズがありません
+        </div>
+      ) : (
+        <div style={{ padding:'0 24px 4px' }}>
+          <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', marginBottom:12 }}>
+            <div style={{ fontSize:11, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase' }}>サイズ別の判定</div>
+            <div style={{ fontSize:12, color:'#8a8a8a' }}>スコア順</div>
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            {sizeResults.map((sr, idx) => {
+              const isBest = idx === 0 && sizeResults.length > 1;
+              const isExpanded = expandedId === sr.size.id;
+              const dotColor = toneBg[sr.verdict.tone] || '#cdcac3';
+              return (
+                <div key={sr.size.id} style={{ background:'#ffffff',
+                  border: isBest ? '2px solid #1c1c1c' : '1px solid #e8e6e2' }}>
+                  <button onClick={() => setExpandedId(isExpanded ? null : sr.size.id)}
+                    style={{ appearance:'none', width:'100%', textAlign:'left', cursor:'pointer', fontFamily:'inherit',
+                      background:'transparent', border:'none', padding:'16px 18px',
+                      display:'flex', alignItems:'center', gap:14 }}>
+                    {isBest && (
+                      <div style={{ position:'absolute', marginTop:-30, marginLeft:-2, background:'#1c1c1c', color:'#faf8f4',
+                        fontSize:10, letterSpacing:'0.18em', padding:'4px 10px', textTransform:'uppercase' }}>★ BEST</div>
+                    )}
+                    <div style={{ width:50, height:50, borderRadius:'50%', background:dotColor, color:'#faf8f4',
+                      display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontFamily:'"Cormorant Garamond",serif' }}>
+                      <div style={{ fontSize:17, fontWeight:500, lineHeight:1 }}>{sr.verdict.score ?? '—'}</div>
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:16, fontWeight:500, color:'#1c1c1c', marginBottom:4 }}>サイズ {sr.size.sizeLabel || '(未設定)'}</div>
+                      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                        <VerdictPill tone={sr.verdict.tone} small>{sr.verdict.label}</VerdictPill>
+                        <span style={{ fontSize:11, color:'#8a8a8a' }}>{sr.verdict.summary}</span>
+                      </div>
+                    </div>
+                    <div style={{ fontSize:18, color:'#cdcac3' }}>{isExpanded ? '▾' : '▸'}</div>
+                  </button>
+                  {isExpanded && (
+                    <div style={{ borderTop:'1px solid #f0eee9', padding:'4px 0 12px' }}>
+                      <div style={{ margin:'8px 12px 0', background:'#fbfaf6', borderTop:'1px solid #ececec', borderBottom:'1px solid #ececec', padding:'8px 0' }}>
+                        <FigureCompare category={candidate.category} rows={sr.rows} showLabels={showLabels} height={300} />
+                      </div>
+                      <div style={{ padding:'14px 12px 0' }}>
+                        {(judgementUI === 'all' || !judgementUI) && (
+                          <>
+                            <VerdictScoreView v={sr.verdict} rows={sr.rows} compact />
+                            <VerdictBreakdownView v={sr.verdict} rows={sr.rows} cat={cat} />
+                          </>
+                        )}
+                        {judgementUI === 'label' && <VerdictLabelView v={sr.verdict} />}
+                        {judgementUI === 'score' && <VerdictScoreView v={sr.verdict} rows={sr.rows} />}
+                        {judgementUI === 'breakdown' && <VerdictBreakdownView v={sr.verdict} rows={sr.rows} cat={cat} />}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
-      <div style={{ padding:'20px 22px 28px', display:'flex', gap:10 }}>
+      {sameCatBases.length > 1 && (
+        <div style={{ padding:'24px 24px 4px' }}>
+          <div style={{ fontSize:11, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase', marginBottom:12 }}>他の基準と比べる</div>
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            {baseScores.map(bs => {
+              const isCurrent = bs.base.id === base.id;
+              const tone = bs.score >= 88 ? 'ok' : bs.score >= 70 ? 'soft' : 'warn';
+              return (
+                <button key={bs.base.id} onClick={() => !isCurrent && onChangeBase()}
+                  disabled={isCurrent}
+                  style={{ appearance:'none', textAlign:'left', cursor: isCurrent?'default':'pointer', fontFamily:'inherit',
+                    display:'flex', alignItems:'center', gap:12, padding:'14px 16px',
+                    background: isCurrent ? '#f3f0ea' : '#ffffff',
+                    border: isCurrent ? '1px solid #1c1c1c' : '1px solid #e8e6e2' }}>
+                  <span style={{ fontSize:14 }}>{bs.base.primary?'★':'·'}</span>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:14, fontWeight:500, color:'#1c1c1c' }}>{bs.base.name}</div>
+                    <div style={{ fontSize:11, color:'#8a8a8a', marginTop:2 }}>{bs.base.brand} · {bs.base.sizeLabel}</div>
+                  </div>
+                  <div style={{ fontFamily:'"Cormorant Garamond",serif', fontSize:18, fontWeight:500, color:'#1c1c1c', fontVariantNumeric:'tabular-nums' }}>
+                    {bs.score}
+                  </div>
+                  <VerdictPill tone={tone} small>
+                    {isCurrent ? '現在' : bs.score >= 88 ? '近い' : bs.score >= 70 ? '中' : '遠い'}
+                  </VerdictPill>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div style={{ padding:'24px 24px 32px', display:'flex', gap:12 }}>
         <GhostBtn onClick={onBack}>サイズを直す</GhostBtn>
         <PrimaryBtn onClick={onSave}>保存して戻る</PrimaryBtn>
       </div>
@@ -1449,14 +1682,14 @@ function VerdictLabelView({ v, compact=false }) {
   const { VerdictPill } = window.fittoUI;
   const conf = v.score == null ? '—' : v.score >= 88 ? '高' : v.score >= 70 ? '中' : '低';
   return (
-    <div style={{ background:'#ffffff', border:'1px solid #ececec', padding:compact?'14px 16px':'20px 18px', marginBottom:compact?12:0 }}>
-      <div style={{ display:'flex', alignItems:'baseline', gap:10, marginBottom:8 }}>
-        <div style={{ fontSize:10, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase' }}>判定</div>
+    <div style={{ background:'#ffffff', border:'1px solid #ececec', padding:compact?'16px 18px':'22px 20px', marginBottom:compact?14:0 }}>
+      <div style={{ display:'flex', alignItems:'baseline', gap:10, marginBottom:10 }}>
+        <div style={{ fontSize:11, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase' }}>判定</div>
         <div style={{ flex:1, height:1, background:'#e8e6e2' }} />
-        <div style={{ fontSize:10, color:'#8a8a8a' }}>信頼度 {conf}</div>
+        <div style={{ fontSize:12, color:'#8a8a8a' }}>信頼度 {conf}</div>
       </div>
-      <div style={{ fontFamily:'"Cormorant Garamond","Noto Sans JP",serif', fontSize:compact?28:36, fontWeight:500, lineHeight:1.1, color:'#1c1c1c', marginBottom:8 }}>{v.label}</div>
-      <div style={{ fontSize:12, lineHeight:1.7, color:'#4a4a4a', marginBottom:10 }}>{v.summary}</div>
+      <div style={{ fontFamily:'"Cormorant Garamond","Noto Sans JP",serif', fontSize:compact?32:40, fontWeight:500, lineHeight:1.1, color:'#1c1c1c', marginBottom:10 }}>{v.label}</div>
+      <div style={{ fontSize:14, lineHeight:1.7, color:'#4a4a4a', marginBottom:12 }}>{v.summary}</div>
       <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
         {v.tightCount > 0 && <VerdictPill tone="warn" small>タイト {v.tightCount}箇所</VerdictPill>}
         {v.looseCount > 0 && <VerdictPill tone="soft" small>ゆとり {v.looseCount}箇所</VerdictPill>}
@@ -1473,22 +1706,22 @@ function VerdictScoreView({ v, rows, compact=false }) {
   const r = 36, c = 2 * Math.PI * r, dash = (score / 100) * c;
   const stroke = { ok:'#1c1c1c', soft:'#6b7c5a', warn:'#b86a4a', bad:'#8a3a1c' }[v.tone] || '#cdcac3';
   return (
-    <div style={{ background:'#ffffff', border:'1px solid #ececec', padding:compact?'14px 16px':'20px 18px',
-      marginBottom:compact?12:0, display:'flex', alignItems:'center', gap:18 }}>
-      <div style={{ position:'relative', width:92, height:92, flexShrink:0 }}>
-        <svg width="92" height="92" viewBox="0 0 92 92">
-          <circle cx="46" cy="46" r={r} fill="none" stroke="#ececec" strokeWidth="3" />
-          <circle cx="46" cy="46" r={r} fill="none" stroke={stroke} strokeWidth="3"
-            strokeDasharray={`${dash} ${c}`} strokeLinecap="butt" transform="rotate(-90 46 46)" />
+    <div style={{ background:'#ffffff', border:'1px solid #ececec', padding:compact?'16px 18px':'22px 20px',
+      marginBottom:compact?14:0, display:'flex', alignItems:'center', gap:20 }}>
+      <div style={{ position:'relative', width:104, height:104, flexShrink:0 }}>
+        <svg width="104" height="104" viewBox="0 0 104 104">
+          <circle cx="52" cy="52" r={r} fill="none" stroke="#ececec" strokeWidth="4" />
+          <circle cx="52" cy="52" r={r} fill="none" stroke={stroke} strokeWidth="4"
+            strokeDasharray={`${dash} ${c}`} strokeLinecap="butt" transform="rotate(-90 52 52)" />
         </svg>
         <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column' }}>
-          <div style={{ fontFamily:'"Cormorant Garamond",serif', fontSize:30, fontWeight:500, color:'#1c1c1c', lineHeight:1 }}>{score}</div>
-          <div style={{ fontSize:9, letterSpacing:'0.16em', color:'#8a8a8a', textTransform:'uppercase', marginTop:2 }}>fit score</div>
+          <div style={{ fontFamily:'"Cormorant Garamond",serif', fontSize:36, fontWeight:500, color:'#1c1c1c', lineHeight:1 }}>{score}</div>
+          <div style={{ fontSize:10, letterSpacing:'0.16em', color:'#8a8a8a', textTransform:'uppercase', marginTop:3 }}>fit score</div>
         </div>
       </div>
       <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ fontSize:10, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase', marginBottom:4 }}>スコア内訳</div>
-        <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+        <div style={{ fontSize:11, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase', marginBottom:6 }}>スコア内訳</div>
+        <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
           {[
             { label:'ジャスト', count:rows.filter(r => r.status==='fit').length, color:'#1c1c1c' },
             { label:'ゆとり', count:rows.filter(r => r.diff!=null && r.diff > (TOLERANCE[r.key]?.fit||2)).length, color:'#6b7c5a' },
@@ -1497,12 +1730,12 @@ function VerdictScoreView({ v, rows, compact=false }) {
             const total = rows.filter(r => r.diff!=null).length;
             const pct = total ? (count/total)*100 : 0;
             return (
-              <div key={label} style={{ display:'flex', alignItems:'center', gap:8 }}>
-                <div style={{ width:50, fontSize:10, color:'#4a4a4a' }}>{label}</div>
-                <div style={{ flex:1, height:4, background:'#f3f0ea', position:'relative' }}>
+              <div key={label} style={{ display:'flex', alignItems:'center', gap:10 }}>
+                <div style={{ width:60, fontSize:12, color:'#4a4a4a' }}>{label}</div>
+                <div style={{ flex:1, height:5, background:'#f3f0ea', position:'relative' }}>
                   <div style={{ position:'absolute', inset:0, width:`${pct}%`, background:color }} />
                 </div>
-                <div style={{ width:24, fontSize:10, color:'#8a8a8a', textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{count}</div>
+                <div style={{ width:28, fontSize:12, color:'#8a8a8a', textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{count}</div>
               </div>
             );
           })}
@@ -1515,10 +1748,10 @@ function VerdictScoreView({ v, rows, compact=false }) {
 function VerdictBreakdownView({ v, rows, cat }) {
   return (
     <div style={{ background:'#ffffff', border:'1px solid #ececec' }}>
-      <div style={{ padding:'12px 16px 10px', borderBottom:'1px solid #ececec', display:'flex', alignItems:'baseline', gap:10 }}>
-        <div style={{ fontSize:10, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase' }}>項目別の差分</div>
+      <div style={{ padding:'14px 18px 12px', borderBottom:'1px solid #ececec', display:'flex', alignItems:'baseline', gap:10 }}>
+        <div style={{ fontSize:11, letterSpacing:'0.18em', color:'#8a8a8a', textTransform:'uppercase' }}>項目別の差分</div>
         <div style={{ flex:1, height:1, background:'#e8e6e2' }} />
-        <div style={{ fontSize:10, color:'#8a8a8a' }}>{v.valid}/{cat.fields.length}項目</div>
+        <div style={{ fontSize:12, color:'#8a8a8a' }}>{v.valid}/{cat.fields.length}項目</div>
       </div>
       {rows.map((r, i) => {
         const { TOLERANCE } = window.fittoData;
@@ -1534,28 +1767,28 @@ function VerdictBreakdownView({ v, rows, cat }) {
         const range = tol.major + 2;
         const pct = r.diff == null ? 50 : Math.max(0, Math.min(100, 50 + (r.diff/range)*50));
         return (
-          <div key={r.key} style={{ padding:'12px 16px', borderBottom: i === rows.length-1 ? 'none' : '1px solid #f0eee9' }}>
-            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:6 }}>
-              <div style={{ width:22, height:22, borderRadius:'50%', border:'1px solid #d8d6d2',
+          <div key={r.key} style={{ padding:'14px 18px', borderBottom: i === rows.length-1 ? 'none' : '1px solid #f0eee9' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:8 }}>
+              <div style={{ width:28, height:28, borderRadius:'50%', border:'1px solid #d8d6d2',
                 display:'flex', alignItems:'center', justifyContent:'center',
-                fontSize:9, color:'#8a8a8a', fontFamily:'"Cormorant Garamond",serif' }}>{r.short}</div>
-              <div style={{ fontSize:12, fontWeight:500, color:'#1c1c1c' }}>{r.ja}</div>
-              {r.estimated && <span style={{ fontSize:9, letterSpacing:'0.1em', color:'#b86a4a', border:'1px solid #e8c7b6', padding:'1px 5px' }}>推定</span>}
+                fontSize:11, color:'#8a8a8a', fontFamily:'"Cormorant Garamond",serif' }}>{r.short}</div>
+              <div style={{ fontSize:14, fontWeight:500, color:'#1c1c1c' }}>{r.ja}</div>
+              {r.estimated && <span style={{ fontSize:10, letterSpacing:'0.1em', color:'#b86a4a', border:'1px solid #e8c7b6', padding:'2px 6px' }}>推定</span>}
               <div style={{ flex:1 }} />
-              <div style={{ fontSize:11, fontVariantNumeric:'tabular-nums', color:'#8a8a8a' }}>
+              <div style={{ fontSize:13, fontVariantNumeric:'tabular-nums', color:'#8a8a8a' }}>
                 {r.base??'—'}<span style={{ margin:'0 4px' }}>→</span>
                 <span style={{ color:'#1c1c1c', fontWeight:500 }}>{r.target??'—'}</span><span style={{ marginLeft:4 }}>cm</span>
               </div>
             </div>
-            <div style={{ position:'relative', height:4, background:'#f3f0ea', marginLeft:32, marginBottom:6 }}>
+            <div style={{ position:'relative', height:5, background:'#f3f0ea', marginLeft:40, marginBottom:8 }}>
               <div style={{ position:'absolute', left:'50%', top:-2, bottom:-2, width:1, background:'#cdcac3' }} />
               <div style={{ position:'absolute', top:0, bottom:0, left:`${50-(tol.fit/range)*50}%`, width:`${(tol.fit*2/range)*50}%`, background:'#e8e6e2' }} />
-              {r.diff != null && <div style={{ position:'absolute', top:-3, height:10, width:2, left:`${pct}%`, transform:'translateX(-1px)', background:dotColor }} />}
+              {r.diff != null && <div style={{ position:'absolute', top:-3, height:11, width:2, left:`${pct}%`, transform:'translateX(-1px)', background:dotColor }} />}
             </div>
-            <div style={{ display:'flex', alignItems:'center', gap:8, marginLeft:32 }}>
-              <span style={{ width:6, height:6, borderRadius:'50%', background:dotColor }} />
-              <span style={{ fontSize:11, color:'#1c1c1c' }}>{tag.ja}</span>
-              {r.diff != null && <span style={{ fontSize:11, color:'#8a8a8a', fontVariantNumeric:'tabular-nums', marginLeft:'auto' }}>{r.diff>0?'+':''}{r.diff.toFixed(1)}cm</span>}
+            <div style={{ display:'flex', alignItems:'center', gap:10, marginLeft:40 }}>
+              <span style={{ width:8, height:8, borderRadius:'50%', background:dotColor }} />
+              <span style={{ fontSize:13, color:'#1c1c1c' }}>{tag.ja}</span>
+              {r.diff != null && <span style={{ fontSize:13, color:'#8a8a8a', fontVariantNumeric:'tabular-nums', marginLeft:'auto' }}>{r.diff>0?'+':''}{r.diff.toFixed(1)}cm</span>}
             </div>
           </div>
         );
@@ -1625,10 +1858,16 @@ function App() {
 
   const onSaveResult = () => {
     const { compareItem, verdict } = window.fittoData;
-    const v = verdict(compareItem(baseGarment, draft));
+    if (!baseGarment || !draft.sizes?.length) { setScreen('home'); return; }
+    let bestSize = draft.sizes[0], bestScore = -1;
+    draft.sizes.forEach(s => {
+      const score = verdict(compareItem(baseGarment, { category:draft.category, measures:s.measures })).score;
+      if (score > bestScore) { bestScore = score; bestSize = s; }
+    });
+    const v = verdict(compareItem(baseGarment, { category:draft.category, measures:bestSize.measures }));
     const newH = { id:'h'+Date.now(), category:draft.category,
       brand:(draft.brand||'').split(' — ')[0]||draft.brand||'無題',
-      product:(draft.brand||'').split(' — ')[1]||draft.sizeLabel||'',
+      product:(draft.brand||'').split(' — ')[1]||bestSize.sizeLabel||'',
       date:'今日', baseName:baseGarment?.name||'', label:v.label, tone:v.tone };
     setHistory(h => [newH, ...h]);
     setScreen('home');
@@ -1642,7 +1881,7 @@ function App() {
     screenEl = <CompareInputScreen wardrobe={wardrobe} draft={draft} setDraft={setDraft}
       onBack={() => setScreen('home')} onCompute={() => setScreen('result')} />;
   } else if (screen === 'result') {
-    screenEl = baseGarment ? <ResultScreen base={baseGarment} candidate={draft}
+    screenEl = baseGarment ? <ResultScreen base={baseGarment} candidate={draft} wardrobe={wardrobe}
       judgementUI={t.judgementUI} showLabels={t.showLabels}
       onBack={() => setScreen('compare')} onSave={onSaveResult} onChangeBase={() => setScreen('compare')} /> : null;
   } else if (screen === 'setup') {
@@ -1661,13 +1900,17 @@ function App() {
         @keyframes fitto-fade { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
         #root { height: 100%; }
         #fitto-app { display:flex; flex-direction:column; height:100%; min-height:100dvh;
-          background:var(--paper);
+          width:100%; max-width:480px; margin:0 auto; background:var(--paper);
+          box-shadow: 0 0 60px rgba(0,0,0,0.04);
           padding-top:env(safe-area-inset-top);
           padding-bottom:env(safe-area-inset-bottom);
           padding-left:env(safe-area-inset-left);
           padding-right:env(safe-area-inset-right); }
         #fitto-screen { flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
         #fitto-screen > div { flex:1; min-height:0; }
+        @media (min-width: 481px) {
+          #fitto-app { min-height:100dvh; }
+        }
       `}</style>
       <div id="fitto-app">
         <div id="fitto-screen">
