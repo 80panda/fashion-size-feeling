@@ -1219,7 +1219,15 @@ function SetupEditScreen({ initial, onBack, onSave }) {
       <div style={{ padding:'18px 24px 10px' }}>
         <label style={{ display:'flex', alignItems:'center', gap:12, fontSize:14, color:'#1c1c1c', cursor:'pointer', minHeight:44 }}>
           <input type="checkbox" checked={!!draft.primary} onChange={(e) => update({ primary:e.target.checked })}
-            style={{ accentColor:'#1c1c1c', width:20, height:20 }} />
+            style={{ position:'absolute', opacity:0, width:0, height:0, pointerEvents:'none' }} />
+          <div style={{ width:20, height:20, flexShrink:0, borderRadius:3,
+            border:`2px solid ${draft.primary ? '#1c1c1c' : '#cdcac3'}`,
+            background: draft.primary ? '#1c1c1c' : 'transparent',
+            display:'flex', alignItems:'center', justifyContent:'center' }}>
+            {draft.primary && <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
+              <path d="M1.5 5L4.5 8.5L10.5 1.5" stroke="#faf8f4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>}
+          </div>
           このカテゴリの基準にする（★）
         </label>
       </div>
@@ -1674,7 +1682,15 @@ function PasteSizeTableModal({ hintCategory, onClose, onResult }) {
                         background:sel?'#1c1c1c':'#ffffff', color:sel?'#faf8f4':'#1c1c1c',
                         border:`1px solid ${sel?'#1c1c1c':'#d8d6d2'}`, opacity: empty ? 0.5 : 1 }}>
                         <input type="checkbox" checked={sel} disabled={empty} onChange={() => toggleSize(i)}
-                          style={{ accentColor:sel?'#faf8f4':'#1c1c1c', width:20, height:20 }} />
+                          style={{ position:'absolute', opacity:0, width:0, height:0, pointerEvents:'none' }} />
+                        <div style={{ width:20, height:20, flexShrink:0, borderRadius:3,
+                          border:`2px solid ${sel ? '#faf8f4' : '#cdcac3'}`,
+                          background: sel ? '#faf8f4' : 'transparent',
+                          display:'flex', alignItems:'center', justifyContent:'center' }}>
+                          {sel && <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
+                            <path d="M1.5 5L4.5 8.5L10.5 1.5" stroke="#1c1c1c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>}
+                        </div>
                         <div style={{ flex:1, minWidth:0 }}>
                           <div style={{ fontSize:15, fontWeight:500, marginBottom:4 }}>
                             サイズ {s.sizeLabel || `#${i+1}`}
