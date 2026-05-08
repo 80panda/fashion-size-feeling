@@ -452,144 +452,280 @@ window.fittoLLM = { parseSizeTable, parseSizeTableFromImage };
 <script type="text/babel">
 const { calloutText } = window.fittoData;
 
-function BodySilhouette({ stroke='#bdbab4', sw=1.2 }) {
+const GARMENT_DEFAULTS = {
+  pants: { waist:84, hip:100, thigh:30, rise:25, hem:20, inseam:78 },
+  tops:  { shoulder:44, chest:51, length:67, sleeve:21, cuff:17, neck:40 },
+  outer: { shoulder:46, chest:55, length:90, sleeve:60, hem:55, neck:42 },
+};
+
+const VIEW_W = 200, VIEW_H = 380, PADDING = 14;
+
+function fillMeasures(category, measures) {
+  const def = GARMENT_DEFAULTS[category] || {};
+  const out = {};
+  Object.keys(def).forEach(k => { out[k] = measures?.[k] != null ? measures[k] : def[k]; });
+  // outer also uses sleeve, length, hem from tops-like; ensure all
+  if (category === 'outer') {
+    if (out.length == null) out.length = 90;
+    if (out.sleeve == null) out.sleeve = 60;
+    if (out.cuff == null) out.cuff = 12;
+  }
+  return out;
+}
+
+function garmentDims(category, m) {
+  if (category === 'pants') {
+    const halfWaist = m.waist / 4;
+    const halfHip = m.hip / 4;
+    const totalLegW = m.thigh; // half-flat width of one leg at top
+    const halfWidth = Math.max(halfWaist, halfHip, totalLegW); // cm from center to side
+    const totalH = m.rise + m.inseam;
+    return { halfWidth, totalH };
+  } else {
+    // tops & outer
+    const halfShoulder = m.shoulder / 2;
+    const halfChest = m.chest / 2;
+    const sleeveAngleDeg = 50 + Math.min(m.sleeve, 80) * 0.4; // 50→82
+    const sleeveAngleRad = sleeveAngleDeg * Math.PI / 180;
+    const sleeveDx = Math.cos(sleeveAngleRad) * m.sleeve;
+    const sleeveDy = Math.sin(sleeveAngleRad) * m.sleeve;
+    const halfWidth = Math.max(halfShoulder + sleeveDx, halfChest);
+    const totalH = Math.max(m.length, sleeveDy + 4);
+    return { halfWidth, totalH, sleeveAngleRad, sleeveDx, sleeveDy, halfShoulder, halfChest };
+  }
+}
+
+function commonScale(category, baseMeasures, candidateMeasures) {
+  const a = garmentDims(category, fillMeasures(category, baseMeasures));
+  const b = garmentDims(category, fillMeasures(category, candidateMeasures || baseMeasures));
+  const maxW = Math.max(a.halfWidth, b.halfWidth) * 2;
+  const maxH = Math.max(a.totalH, b.totalH);
+  const sx = (VIEW_W - PADDING * 2) / Math.max(maxW, 1);
+  const sy = (VIEW_H - PADDING * 2) / Math.max(maxH, 1);
+  return Math.min(sx, sy);
+}
+
+// Build SVG path for garment outline
+function buildPantsPath(m, scale, cx, y0) {
+  const halfWaist = m.waist / 4 * scale;
+  const halfHip = m.hip / 4 * scale;
+  const thighW = m.thigh * scale;     // each leg outer offset from cx
+  const hemW = m.hem * scale;
+  const riseH = m.rise * scale;
+  const inseamH = m.inseam * scale;
+  const yHip = y0 + riseH * 0.55;
+  const yCrotch = y0 + riseH;
+  const yBot = yCrotch + inseamH;
+  const cg = 1.5; // crotch gap (svg units, visual)
+  return [
+    `M ${cx - halfWaist} ${y0}`,
+    `L ${cx + halfWaist} ${y0}`,
+    `L ${cx + halfHip} ${yHip}`,
+    `L ${cx + thighW} ${yCrotch}`,
+    `L ${cx + hemW} ${yBot}`,
+    `L ${cx + cg} ${yBot}`,
+    `L ${cx} ${yCrotch}`,
+    `L ${cx - cg} ${yBot}`,
+    `L ${cx - hemW} ${yBot}`,
+    `L ${cx - thighW} ${yCrotch}`,
+    `L ${cx - halfHip} ${yHip}`,
+    'Z'
+  ].join(' ');
+}
+
+function buildTopsPath(m, scale, cx, y0, isOuter=false) {
+  const sw = m.shoulder * scale;          // total shoulder width
+  const cw = m.chest * scale;             // total chest width (flat)
+  const lh = m.length * scale;
+  const sl = m.sleeve * scale;
+  const cf = m.cuff * scale;              // cuff width (flat)
+  const neckHalf = (m.neck / Math.PI) / 2 * scale; // neck opening half-width
+  const neckDepth = neckHalf * 1.2;
+  const angleDeg = 50 + Math.min(m.sleeve, 80) * 0.4;
+  const angleRad = angleDeg * Math.PI / 180;
+  const dx = Math.cos(angleRad) * sl;
+  const dy = Math.sin(angleRad) * sl;
+  // Underarm position - drop along sleeve from shoulder a bit so body side connects naturally
+  const underarmFrac = 0.18;
+  const ax_r = cx + sw/2 + dx * underarmFrac;
+  const ay_r = y0 + dy * underarmFrac;
+  // Cuff direction perpendicular to sleeve (outward from body)
+  const cuffDx = -Math.sin(angleRad) * cf / 2;
+  const cuffDy = Math.cos(angleRad) * cf / 2;
+  const sleeveTipUpper_r = { x: cx + sw/2 + dx + cuffDx*-1, y: y0 + dy + cuffDy*-1 };
+  const sleeveTipLower_r = { x: cx + sw/2 + dx + cuffDx,    y: y0 + dy + cuffDy };
+  return [
+    `M ${cx - sw/2} ${y0}`,                                          // left shoulder
+    `L ${cx - neckHalf} ${y0}`,
+    `Q ${cx} ${y0 + neckDepth} ${cx + neckHalf} ${y0}`,             // neckline curve
+    `L ${cx + sw/2} ${y0}`,                                          // right shoulder
+    // right sleeve
+    `L ${cx + sw/2 + dx - cuffDx} ${y0 + dy - cuffDy}`,            // sleeve outer top (extending up cuff half)
+    `L ${cx + sw/2 + dx + cuffDx} ${y0 + dy + cuffDy}`,            // sleeve outer bottom (other side of cuff)
+    `L ${ax_r.toFixed(2)} ${ay_r.toFixed(2)}`,                       // underarm right
+    // body right side
+    `L ${cx + cw/2} ${y0 + lh}`,
+    // bottom
+    `L ${cx - cw/2} ${y0 + lh}`,
+    // body left side
+    `L ${(cx - sw/2 - dx * underarmFrac).toFixed(2)} ${(y0 + dy * underarmFrac).toFixed(2)}`,
+    // left sleeve outer
+    `L ${cx - sw/2 - dx + cuffDx} ${y0 + dy + cuffDy}`,            // mirrored cuff bottom-of-line
+    `L ${cx - sw/2 - dx - cuffDx} ${y0 + dy - cuffDy}`,            // mirrored cuff top
+    'Z'
+  ].join(' ');
+}
+
+function buildOuterFront(m, scale, cx, y0) {
+  // front opening line for outer
+  const lh = m.length * scale;
+  const neckHalf = (m.neck / Math.PI) / 2 * scale;
+  const neckDepth = neckHalf * 1.2;
+  return `M ${cx} ${y0 + neckDepth} L ${cx} ${y0 + lh}`;
+}
+
+function GarmentShape({ category, measures, scale, originY=PADDING, dashed=false, stroke='#1c1c1c', fill='none', strokeWidth=1.4, opacity=1 }) {
+  const cx = VIEW_W / 2;
+  const m = fillMeasures(category, measures);
+  const path = category === 'pants' ? buildPantsPath(m, scale, cx, originY)
+    : buildTopsPath(m, scale, cx, originY, category === 'outer');
   return (
-    <g fill="none" stroke={stroke} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
-      <ellipse cx="100" cy="34" rx="18" ry="22" />
-      <path d="M92 56 L92 66 Q100 70 108 66 L108 56" />
-      <path d="M70 78 Q100 70 130 78 L138 96 Q142 130 138 168 L132 200 Q128 224 126 252 L122 290 L120 348 L114 354" />
-      <path d="M130 78 Q100 70 70 78 L62 96 Q58 130 62 168 L68 200 Q72 224 74 252 L78 290 L80 348 L86 354" />
-      <path d="M70 80 Q44 130 38 184 Q36 198 38 208 L48 210" />
-      <path d="M130 80 Q156 130 162 184 Q164 198 162 208 L152 210" />
-      <path d="M100 200 L100 348" strokeDasharray="2 4" opacity="0.5" />
-      <path d="M82 354 L86 354 L86 358 L78 358 Z" fill={stroke} stroke="none" opacity="0.5" />
-      <path d="M118 354 L114 354 L114 358 L122 358 Z" fill={stroke} stroke="none" opacity="0.5" />
+    <g opacity={opacity}>
+      <path d={path} fill={fill} stroke={stroke} strokeWidth={strokeWidth}
+        strokeDasharray={dashed ? '4 3' : null}
+        strokeLinejoin="round" strokeLinecap="round" />
+      {category === 'outer' && (
+        <path d={buildOuterFront(m, scale, cx, originY)} fill="none" stroke={stroke} strokeWidth={strokeWidth*0.7}
+          strokeDasharray={dashed ? '4 3' : '2 3'} opacity="0.5" />
+      )}
     </g>
   );
 }
 
-function PantsOverlay({ accent='#1c1c1c', highlight='#6b7c5a' }) {
-  return (
-    <g fill="none" stroke={accent} strokeWidth="1.4" strokeLinejoin="round">
-      <path d="M70 168 Q100 162 130 168 L132 174 Q100 170 68 174 Z" fill="#f6f4ee" stroke={accent} />
-      <path d="M68 174 L62 250 L60 320 L56 352 L80 354 L88 320 L94 260 L100 200 L106 260 L112 320 L120 354 L144 352 L140 320 L138 250 L132 174 Z" fill="#fbfaf6" stroke={accent} />
-      <path d="M70 170 Q100 165 130 170" stroke={highlight} strokeWidth="1.6" />
-      <path d="M64 196 Q100 190 136 196" stroke={highlight} strokeWidth="1.6" />
-      <path d="M56 352 L80 354" stroke={highlight} strokeWidth="1.6" />
-      <path d="M120 354 L144 352" stroke={highlight} strokeWidth="1.6" />
-    </g>
-  );
-}
-
-function TopsOverlay({ accent='#1c1c1c', highlight='#6b7c5a' }) {
-  return (
-    <g fill="none" stroke={accent} strokeWidth="1.4" strokeLinejoin="round">
-      <path d="M64 78 Q100 70 136 78 L156 96 L162 130 L154 144 L142 132 L142 220 Q100 226 58 220 L58 132 L46 144 L38 130 L44 96 Z" fill="#fbfaf6" stroke={accent} />
-      <path d="M88 76 Q100 84 112 76" stroke={accent} />
-      <path d="M64 80 Q100 72 136 80" stroke={highlight} strokeWidth="1.6" />
-      <path d="M58 132 Q100 126 142 132" stroke={highlight} strokeWidth="1.6" />
-      <path d="M152 138 L160 132" stroke={highlight} strokeWidth="1.6" />
-    </g>
-  );
-}
-
-function OuterOverlay({ accent='#1c1c1c', highlight='#6b7c5a' }) {
-  return (
-    <g fill="none" stroke={accent} strokeWidth="1.4" strokeLinejoin="round">
-      <path d="M62 78 Q100 70 138 78 L160 100 L172 200 L160 220 L148 200 L148 280 L140 290 L100 290 L60 290 L52 280 L52 200 L40 220 L28 200 L40 100 Z" fill="#fbfaf6" stroke={accent} />
-      <path d="M100 76 L100 290" stroke={accent} strokeDasharray="2 3" opacity="0.5" />
-      <path d="M62 80 Q100 72 138 80" stroke={highlight} strokeWidth="1.6" />
-      <path d="M52 200 L148 200" stroke={highlight} strokeWidth="1.6" />
-      <path d="M60 290 L140 290" stroke={highlight} strokeWidth="1.6" />
-    </g>
-  );
+// Compute anchor position (svg coords) for a given measurement key on the BASE garment
+function edgeAnchor(category, key, m, scale, originY=PADDING) {
+  const cx = VIEW_W / 2;
+  if (category === 'pants') {
+    const halfWaist = m.waist / 4 * scale;
+    const halfHip = m.hip / 4 * scale;
+    const thighW = m.thigh * scale;
+    const hemW = m.hem * scale;
+    const riseH = m.rise * scale;
+    const inseamH = m.inseam * scale;
+    const yHip = originY + riseH * 0.55;
+    const yCrotch = originY + riseH;
+    const yBot = yCrotch + inseamH;
+    if (key === 'waist')  return { ax: cx + halfWaist, ay: originY,        side: 'right' };
+    if (key === 'hip')    return { ax: cx + halfHip,   ay: yHip,           side: 'right' };
+    if (key === 'thigh')  return { ax: cx - thighW,    ay: yCrotch,        side: 'left'  };
+    if (key === 'rise')   return { ax: cx - halfWaist, ay: (originY + yCrotch)/2, side: 'left'  };
+    if (key === 'hem')    return { ax: cx - hemW,      ay: yBot,           side: 'left'  };
+    if (key === 'inseam') return { ax: cx + hemW * 0.4, ay: (yCrotch + yBot)/2, side:'right' };
+  } else {
+    const sw = m.shoulder * scale;
+    const cw = m.chest * scale;
+    const lh = m.length * scale;
+    const sl = m.sleeve * scale;
+    const cf = m.cuff * scale;
+    const neckHalf = (m.neck / Math.PI) / 2 * scale;
+    const angleRad = (50 + Math.min(m.sleeve, 80) * 0.4) * Math.PI / 180;
+    const dx = Math.cos(angleRad) * sl;
+    const dy = Math.sin(angleRad) * sl;
+    if (key === 'shoulder') return { ax: cx - sw/2,    ay: originY,                side: 'left'  };
+    if (key === 'neck')     return { ax: cx + neckHalf, ay: originY + neckHalf*0.4, side: 'right' };
+    if (key === 'sleeve')   return { ax: cx + sw/2 + dx, ay: originY + dy,         side: 'right' };
+    if (key === 'cuff')     return { ax: cx + sw/2 + dx, ay: originY + dy + cf*0.5, side: 'right' };
+    if (key === 'chest')    return { ax: cx - cw/2,    ay: originY + lh * 0.4,    side: 'left'  };
+    if (key === 'length')   return { ax: cx + cw/2,    ay: originY + lh,           side: 'right' };
+    if (key === 'hem')      return { ax: cx + cw/2,    ay: originY + lh,           side: 'right' };
+  }
+  return null;
 }
 
 function Callout({ x, y, ax, ay, headline, qual, side='left', tone='fit' }) {
   const toneColor = { fit:'#1c1c1c', loose:'#6b7c5a', tight:'#b86a4a', major:'#b86a4a' }[tone] || '#1c1c1c';
-  const w = 96, h = qual ? 44 : 28;
-  const px = side === 'left' ? x - w - 18 : x + 18;
+  const w = 80, h = qual ? 38 : 24;
+  const px = side === 'left' ? x - w - 6 : x + 6;
   const py = y - h / 2;
   return (
     <g>
-      <line x1={ax} y1={ay} x2={x} y2={y} stroke="#9c9893" strokeWidth="0.8" strokeDasharray="1.5 2" />
-      <circle cx={ax} cy={ay} r="2.4" fill="#6b7c5a" />
+      <line x1={ax} y1={ay} x2={x} y2={y} stroke="#9c9893" strokeWidth="0.6" strokeDasharray="1.5 2" />
+      <circle cx={ax} cy={ay} r="2" fill={toneColor} />
       <g transform={`translate(${px} ${py})`}>
-        <rect x="0" y="0" width={w} height={h} rx="3" fill="#ffffff" stroke="#cdcac3" strokeWidth="0.8" />
-        <text x={w/2} y={qual ? 16 : 18} textAnchor="middle"
-              fontFamily='"Noto Sans JP",system-ui' fontSize="11" fontWeight="500" fill={toneColor}>{headline}</text>
-        {qual && <text x={w/2} y={32} textAnchor="middle"
-              fontFamily='"Noto Sans JP",system-ui' fontSize="10" fontWeight="400" fill="#4a4a4a">{qual}</text>}
+        <rect x="0" y="0" width={w} height={h} rx="3" fill="#ffffff" stroke={toneColor} strokeWidth="0.7" opacity="0.95" />
+        <text x={w/2} y={qual ? 14 : 16} textAnchor="middle"
+              fontFamily='"Noto Sans JP",system-ui' fontSize="10" fontWeight="600" fill={toneColor}>{headline}</text>
+        {qual && <text x={w/2} y={28} textAnchor="middle"
+              fontFamily='"Noto Sans JP",system-ui' fontSize="9" fontWeight="400" fill="#4a4a4a">{qual}</text>}
       </g>
     </g>
   );
 }
 
-const ANCHORS = {
-  pants: {
-    waist:  { ax:100, ay:170, x:38,  y:150, side:'left' },
-    hip:    { ax:100, ay:196, x:162, y:200, side:'right' },
-    thigh:  { ax:96,  ay:230, x:38,  y:244, side:'left' },
-    rise:   { ax:100, ay:184, x:162, y:158, side:'right' },
-    hem:    { ax:70,  ay:350, x:36,  y:326, side:'left' },
-    inseam: { ax:100, ay:280, x:162, y:296, side:'right' },
-  },
-  tops: {
-    shoulder: { ax:100, ay:78,  x:38,  y:60,  side:'left' },
-    chest:    { ax:100, ay:130, x:38,  y:138, side:'left' },
-    length:   { ax:100, ay:222, x:162, y:230, side:'right' },
-    sleeve:   { ax:152, ay:138, x:162, y:110, side:'right' },
-    cuff:     { ax:152, ay:144, x:162, y:168, side:'right' },
-    neck:     { ax:100, ay:76,  x:162, y:50,  side:'right' },
-  },
-  outer: {
-    shoulder: { ax:100, ay:78,  x:38,  y:60,  side:'left' },
-    chest:    { ax:100, ay:130, x:38,  y:130, side:'left' },
-    length:   { ax:100, ay:290, x:162, y:280, side:'right' },
-    sleeve:   { ax:168, ay:200, x:162, y:168, side:'right' },
-    hem:      { ax:100, ay:290, x:38,  y:250, side:'left' },
-  },
-};
+function FigureCompare({ category, baseMeasures, candidateMeasures, rows=[], showLabels=true, height=360 }) {
+  const scale = commonScale(category, baseMeasures, candidateMeasures);
+  const baseM = fillMeasures(category, baseMeasures);
+  const candM = fillMeasures(category, candidateMeasures || baseMeasures);
+  // Calloutの label位置: 配置候補 left/right を交互に
+  const callouts = showLabels ? rows.map((r) => {
+    if (r.diff == null || Math.abs(r.diff) < 0.05) return null;
+    const anchor = edgeAnchor(category, r.key, baseM, scale);
+    if (!anchor) return null;
+    const c = calloutText(r.diff, r.axis);
+    if (!c) return null;
+    const tol = window.fittoData.TOLERANCE[r.key] || { fit:2, loose:4, major:7 };
+    const abs = Math.abs(r.diff);
+    let tone = 'fit';
+    if (abs > tol.major) tone = 'major';
+    else if (abs > tol.fit) tone = r.diff > 0 ? 'loose' : 'tight';
+    return { key:r.key, anchor, headline:c.headline, qual:c.qual, tone };
+  }).filter(Boolean) : [];
 
-function FigureCompare({ category, rows=[], showLabels=true, height=360 }) {
-  const Overlay = category === 'tops' ? TopsOverlay : category === 'outer' ? OuterOverlay : PantsOverlay;
+  // Distribute callouts vertically to avoid overlap
+  const sideStacks = { left: [], right: [] };
+  callouts.forEach(c => sideStacks[c.anchor.side].push(c));
+  ['left','right'].forEach(side => {
+    sideStacks[side].sort((a, b) => a.anchor.ay - b.anchor.ay);
+    sideStacks[side].forEach((c, i) => {
+      const baseY = c.anchor.ay;
+      // simple stacking: clamp and spread
+      c.x = side === 'left' ? 8 : VIEW_W - 8;
+      c.y = baseY;
+    });
+  });
+
   return (
-    <svg viewBox="0 0 200 380" width="100%" style={{ display:'block', maxHeight:height }}>
-      <BodySilhouette />
-      <Overlay />
-      {showLabels && rows.map((r) => {
-        if (r.diff == null) return null;
-        const a = ANCHORS[category]?.[r.key];
-        if (!a) return null;
-        const c = calloutText(r.diff, r.axis);
-        if (!c) return null;
-        const tol = window.fittoData.TOLERANCE[r.key] || { fit:2, loose:4, major:7 };
-        const abs = Math.abs(r.diff);
-        let tone = 'fit';
-        if (abs > tol.major) tone = 'major';
-        else if (abs > tol.fit) tone = r.diff > 0 ? 'loose' : 'tight';
-        return <Callout key={r.key} ax={a.ax} ay={a.ay} x={a.x} y={a.y} side={a.side}
-                        headline={c.headline} qual={c.qual} tone={tone} />;
-      })}
+    <svg viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} width="100%" style={{ display:'block', maxHeight:height }}>
+      {/* base garment - solid */}
+      <GarmentShape category={category} measures={baseM} scale={scale}
+        stroke="#1c1c1c" fill="#fbfaf6" strokeWidth={1.4} />
+      {/* candidate overlay - dashed, no fill */}
+      {candidateMeasures && Object.keys(candidateMeasures).length > 0 && (
+        <GarmentShape category={category} measures={candM} scale={scale} dashed
+          stroke="#b86a4a" fill="none" strokeWidth={1.4} opacity={0.85} />
+      )}
+      {callouts.map(c => (
+        <Callout key={c.key} ax={c.anchor.ax} ay={c.anchor.ay} x={c.x} y={c.y} side={c.anchor.side}
+          headline={c.headline} qual={c.qual} tone={c.tone} />
+      ))}
     </svg>
   );
 }
 
-function FigureSimple({ category, height=320, highlightField=null }) {
-  const Overlay = category === 'tops' ? TopsOverlay : category === 'outer' ? OuterOverlay : PantsOverlay;
+function FigureSimple({ category, measures, height=320, highlightField=null }) {
+  const scale = commonScale(category, measures, measures);
+  const m = fillMeasures(category, measures);
+  const anchor = highlightField ? edgeAnchor(category, highlightField, m, scale) : null;
   return (
-    <svg viewBox="0 0 200 380" width="100%" style={{ display:'block', maxHeight:height }}>
-      <BodySilhouette />
-      <Overlay highlight={highlightField ? '#b86a4a' : '#6b7c5a'} />
-      {highlightField && ANCHORS[category]?.[highlightField] && (() => {
-        const a = ANCHORS[category][highlightField];
-        return (
-          <g>
-            <circle cx={a.ax} cy={a.ay} r="6" fill="none" stroke="#b86a4a" strokeWidth="1.4" />
-            <circle cx={a.ax} cy={a.ay} r="2.5" fill="#b86a4a" />
-          </g>
-        );
-      })()}
+    <svg viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} width="100%" style={{ display:'block', maxHeight:height }}>
+      <GarmentShape category={category} measures={m} scale={scale}
+        stroke="#1c1c1c" fill="#fbfaf6" strokeWidth={1.4} />
+      {anchor && (
+        <g>
+          <circle cx={anchor.ax} cy={anchor.ay} r="7" fill="none" stroke="#b86a4a" strokeWidth="1.4" />
+          <circle cx={anchor.ax} cy={anchor.ay} r="3" fill="#b86a4a" />
+        </g>
+      )}
     </svg>
   );
 }
@@ -913,7 +1049,7 @@ function SetupEditScreen({ initial, onBack, onSave }) {
 
       <div style={{ margin:'0 24px 18px', padding:'14px', background:'#fbfaf6', border:'1px solid #ececec', display:'flex', alignItems:'center', gap:12 }}>
         <div style={{ width:120, flexShrink:0 }}>
-          <FigureSimple category={draft.category} highlightField={focusedField} height={180} />
+          <FigureSimple category={draft.category} measures={draft.measures} highlightField={focusedField} height={200} />
         </div>
         <div style={{ flex:1, fontSize:13, lineHeight:1.7, color:'#4a4a4a' }}>
           {focusedField ? (
@@ -1616,7 +1752,7 @@ function ResultScreen({ base, candidate, wardrobe, judgementUI, showLabels, onBa
                   {isExpanded && (
                     <div style={{ borderTop:'1px solid #f0eee9', padding:'4px 0 12px' }}>
                       <div style={{ margin:'8px 12px 0', background:'#fbfaf6', borderTop:'1px solid #ececec', borderBottom:'1px solid #ececec', padding:'8px 0' }}>
-                        <FigureCompare category={candidate.category} rows={sr.rows} showLabels={showLabels} height={300} />
+                        <FigureCompare category={candidate.category} baseMeasures={base.measures} candidateMeasures={sr.size.measures} rows={sr.rows} showLabels={showLabels} height={320} />
                       </div>
                       <div style={{ padding:'14px 12px 0' }}>
                         {(judgementUI === 'all' || !judgementUI) && (
