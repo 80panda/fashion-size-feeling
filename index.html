@@ -1458,10 +1458,27 @@ const SAMPLE_HISTORY = [
   { id:'h3', category:'outer', brand:'LEMAIRE', product:'Soft Coat', date:'4月 14日', baseName:'ジャストコート', label:'ゆるい', tone:'warn' },
 ];
 
+function useLocalStorage(key, defaultValue) {
+  const [value, setValue] = React.useState(() => {
+    try {
+      const stored = localStorage.getItem(key);
+      return stored ? JSON.parse(stored) : defaultValue;
+    } catch { return defaultValue; }
+  });
+  const set = React.useCallback((v) => {
+    setValue(prev => {
+      const next = typeof v === 'function' ? v(prev) : v;
+      try { localStorage.setItem(key, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, [key]);
+  return [value, set];
+}
+
 function App() {
   const [t, setTweak] = useTweaks(window.TWEAK_DEFAULTS);
-  const [wardrobe, setWardrobe] = React.useState(DEFAULT_WARDROBE);
-  const [history, setHistory]   = React.useState(SAMPLE_HISTORY);
+  const [wardrobe, setWardrobe] = useLocalStorage('fitto_wardrobe', DEFAULT_WARDROBE);
+  const [history, setHistory]   = useLocalStorage('fitto_history', SAMPLE_HISTORY);
   const [screen, setScreen]     = React.useState('home');
   const [draft, setDraft] = React.useState({
     category:'pants',
