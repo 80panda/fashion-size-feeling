@@ -212,23 +212,9 @@ const CATEGORIES = {
   ]},
 };
 
-const DEFAULT_WARDROBE = [
-  { id:'w1', category:'pants', name:'ジャストパンツ', brand:'A.P.C. — Petit Standard', sizeLabel:'31', primary:true,
-    measures:{ waist:84.5, hip:100.5, thigh:31, rise:25, hem:18.5, inseam:78.5 }, note:'基準にしている一本' },
-  { id:'w2', category:'pants', name:'ややゆるめパンツ', brand:'AURALEE — Light Wool', sizeLabel:'4', primary:false,
-    measures:{ waist:88, hip:104, thigh:33, rise:27, hem:19.5, inseam:80 }, note:'休日用にゆとりあり' },
-  { id:'w3', category:'tops', name:'ジャストTシャツ', brand:'COMOLI — Cotton Tee', sizeLabel:'2', primary:true,
-    measures:{ shoulder:44, chest:51, length:67, sleeve:21, cuff:17, neck:41 }, note:'夏の基準' },
-  { id:'w4', category:'tops', name:'お気に入りニット', brand:'YAECA — Crew Knit', sizeLabel:'M', primary:false,
-    measures:{ shoulder:46, chest:56, length:65, sleeve:60, cuff:9.5, neck:18 }, note:'ゆとり多め' },
-  { id:'w5', category:'outer', name:'ジャストコート', brand:'MARGARET HOWELL — Wool Coat', sizeLabel:'S', primary:true,
-    measures:{ shoulder:47, chest:56, length:102, sleeve:62, hem:60 }, note:'インナー薄手前提' },
-];
+const DEFAULT_WARDROBE = [];
 
-const SAMPLE_CANDIDATE_PANTS = {
-  brand:'Lemaire', product:'Twisted Belted Pants', sizeLabel:'46', category:'pants',
-  measures:{ waist:87, hip:106, rise:30, hem:22, inseam:82 },
-};
+const EMPTY_DRAFT = { category:'pants', brand:'', sizeLabel:'', baseId:null, measures:{} };
 
 const TOLERANCE = {
   waist:{ fit:2, loose:5, major:9 }, hip:{ fit:2, loose:5, major:9 },
@@ -322,7 +308,7 @@ function calloutText(diff, axis) {
   return { headline:`${sign}${abs}cm`, qual };
 }
 
-window.fittoData = { CATEGORIES, DEFAULT_WARDROBE, SAMPLE_CANDIDATE_PANTS, TOLERANCE, estimateField, compareItem, verdict, calloutText };
+window.fittoData = { CATEGORIES, DEFAULT_WARDROBE, EMPTY_DRAFT, TOLERANCE, estimateField, compareItem, verdict, calloutText };
 </script>
 
 <!-- ── llm (Gemini via google.script.run) ── -->
@@ -414,7 +400,50 @@ JSONのみを返してください。前後の説明文は不要です。`;
   return { category:cat, sizes, confidence:['high','medium','low'].includes(parsed.confidence) ? parsed.confidence : 'medium', notes:parsed.notes ? String(parsed.notes) : undefined };
 }
 
-window.fittoLLM = { parseSizeTable };
+async function callLLMWithImage(base64Data, mimeType) {
+  return new Promise((resolve, reject) => {
+    if (typeof google === 'undefined' || !google.script) {
+      reject(new Error('google.script が利用できません。Google Apps Script 上で実行してください。'));
+      return;
+    }
+    google.script.run
+      .withSuccessHandler(resolve)
+      .withFailureHandler((e) => reject(new Error(e.message || '画像AI呼び出しに失敗しました')))
+      .callGeminiWithImage(base64Data, mimeType);
+  });
+}
+
+async function parseSizeTableFromImage(base64Data, mimeType, hintCategory = null) {
+  const fieldMap = {
+    pants:  ['waist','hip','thigh','rise','hem','inseam'],
+    tops:   ['shoulder','chest','length','sleeve','cuff','neck'],
+    outer:  ['shoulder','chest','length','sleeve','hem'],
+  };
+  let text = await callLLMWithImage(base64Data, mimeType);
+  text = String(text).trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim();
+  let parsed;
+  try { parsed = JSON.parse(text); }
+  catch (e) {
+    const m = text.match(/\{[\s\S]*\}/);
+    if (m) { try { parsed = JSON.parse(m[0]); } catch { throw new Error('JSON parse failed'); } }
+    else throw new Error('No JSON found in response');
+  }
+  const cat = ['pants','tops','outer'].includes(parsed.category) ? parsed.category : (hintCategory || 'pants');
+  const allowed = fieldMap[cat] || [];
+  let rawSizes = Array.isArray(parsed.sizes) ? parsed.sizes : null;
+  if (!rawSizes && parsed.measures) rawSizes = [{ sizeLabel:parsed.sizeLabel, measures:parsed.measures, isRange:false }];
+  rawSizes = rawSizes || [];
+  const sizes = rawSizes.map(s => {
+    const measures = {};
+    Object.entries(s.measures || {}).forEach(([k, v]) => {
+      if (allowed.includes(k)) { const num = typeof v === 'number' ? v : parseFloat(v); if (!isNaN(num)) measures[k] = +num.toFixed(1); }
+    });
+    return { sizeLabel: s.sizeLabel ? String(s.sizeLabel) : '', measures, isRange: !!s.isRange };
+  }).filter(s => Object.keys(s.measures).length > 0);
+  return { category:cat, sizes, confidence:['high','medium','low'].includes(parsed.confidence) ? parsed.confidence : 'medium', notes:parsed.notes ? String(parsed.notes) : undefined };
+}
+
+window.fittoLLM = { parseSizeTable, parseSizeTableFromImage };
 </script>
 
 <!-- ── figure ── -->
@@ -570,12 +599,12 @@ window.fittoFigure = { FigureCompare, FigureSimple };
 <script type="text/babel">
 const { CATEGORIES } = window.fittoData;
 
-function Chrome({ title, leading, trailing, children, scroll=true }) {
+function Chrome({ title, titleNode, leading, trailing, children, scroll=true }) {
   return (
     <div style={{ display:'flex', flexDirection:'column', width:'100%', flex:1, minHeight:0, background:'#faf8f4' }}>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 18px 10px', minHeight:44, flexShrink:0 }}>
         <div style={{ minWidth:64, display:'flex', alignItems:'center' }}>{leading}</div>
-        <div style={{ fontFamily:'"Cormorant Garamond","Noto Sans JP",serif', fontSize:18, fontWeight:500, letterSpacing:'0.02em', color:'#1c1c1c' }}>{title}</div>
+        {titleNode || <div style={{ fontFamily:'"Cormorant Garamond","Noto Sans JP",serif', fontSize:18, fontWeight:500, letterSpacing:'0.02em', color:'#1c1c1c' }}>{title}</div>}
         <div style={{ minWidth:64, display:'flex', alignItems:'center', justifyContent:'flex-end' }}>{trailing}</div>
       </div>
       <div style={{ flex:1, minHeight:0, overflowY:scroll?'auto':'hidden', WebkitOverflowScrolling:'touch' }}>{children}</div>
@@ -666,44 +695,71 @@ function HomeScreen({ wardrobe, history, onCompare, onSetup, onItem }) {
     tops:  wardrobe.filter(w => w.category==='tops').length,
     outer: wardrobe.filter(w => w.category==='outer').length,
   };
+  const primaryItems = wardrobe.filter(w => w.primary);
+  const isEmpty = wardrobe.length === 0;
+
   return (
-    <Chrome title="fitto" leading={<NavBtn ghost>―</NavBtn>} trailing={<NavBtn onClick={onSetup}>設定</NavBtn>}>
-      <div style={{ padding:'4px 22px 24px' }}>
-        <div style={{ fontSize:12, lineHeight:1.7, color:'#4a4a4a', marginBottom:22 }}>
-          ジャストサイズと比べて、本当にちょうどいいかを判定します。
-        </div>
-        <PrimaryBtn onClick={onCompare}>サイズを比較する</PrimaryBtn>
-      </div>
-
-      <SectionTitle kicker="Just size" action={<NavBtn ghost onClick={onSetup}>すべて</NavBtn>}>ジャストの基準</SectionTitle>
-      <div style={{ padding:'0 22px 8px', display:'flex', flexDirection:'column', gap:10 }}>
-        {wardrobe.filter(w => w.primary).map(w => (
-          <button key={w.id} onClick={() => onItem(w)} style={{ appearance:'none', textAlign:'left',
-            display:'flex', alignItems:'center', gap:14, padding:'14px 14px', background:'#ffffff',
-            border:'1px solid #e8e6e2', borderRadius:2, cursor:'pointer', fontFamily:'inherit' }}>
-            <div style={{ width:48, height:48, background:'#f3f0ea', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-              <CategoryGlyph category={w.category} size={28} />
-            </div>
-            <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize:13, fontWeight:500, color:'#1c1c1c', marginBottom:2 }}>{w.name}</div>
-              <div style={{ fontSize:11, color:'#8a8a8a', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{w.brand} · size {w.sizeLabel}</div>
-            </div>
-            <div style={{ fontSize:18, color:'#cdcac3', marginLeft:8 }}>›</div>
-          </button>
-        ))}
-      </div>
-
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:1, margin:'14px 22px 4px', background:'#e8e6e2', border:'1px solid #e8e6e2' }}>
-        {Object.values(CATEGORIES).map(c => (
-          <div key={c.id} style={{ background:'#faf8f4', padding:'14px 8px', textAlign:'center' }}>
-            <CategoryGlyph category={c.id} size={26} color="#4a4a4a" />
-            <div style={{ fontSize:10, letterSpacing:'0.12em', color:'#8a8a8a', marginTop:4 }}>{c.label.toUpperCase()}</div>
-            <div style={{ fontSize:18, fontWeight:500, marginTop:2, color:'#1c1c1c', fontFamily:'"Cormorant Garamond",serif' }}>
-              {counts[c.id]}<span style={{ fontSize:11, color:'#8a8a8a', marginLeft:2 }}>着</span>
+    <Chrome
+      titleNode={<span style={{ fontFamily:'"Cormorant Garamond",serif', fontSize:34, fontWeight:500, letterSpacing:'0.06em', color:'#1c1c1c', lineHeight:1 }}>fitto</span>}
+      leading={<NavBtn ghost>―</NavBtn>}
+      trailing={<NavBtn onClick={onSetup}>設定</NavBtn>}
+    >
+      {isEmpty ? (
+        <div style={{ padding:'32px 22px 28px', display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center', gap:20 }}>
+          <div style={{ width:64, height:64, background:'#f3f0ea', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <CategoryGlyph category="tops" size={32} color="#8a8a8a" />
+          </div>
+          <div>
+            <div style={{ fontFamily:'"Cormorant Garamond",serif', fontSize:20, color:'#1c1c1c', marginBottom:8 }}>服を登録して始めましょう</div>
+            <div style={{ fontSize:12, color:'#8a8a8a', lineHeight:1.8 }}>
+              手持ちのジャストサイズな一着を登録すると、<br/>気になる服と寸法を比較できます。
             </div>
           </div>
-        ))}
-      </div>
+          <PrimaryBtn onClick={onSetup}>＋ ジャストサイズを登録する</PrimaryBtn>
+        </div>
+      ) : (
+        <>
+          <div style={{ padding:'4px 22px 20px' }}>
+            <PrimaryBtn onClick={onCompare}>サイズを比較する</PrimaryBtn>
+          </div>
+
+          <SectionTitle kicker="Just size" action={<NavBtn ghost onClick={onSetup}>すべて</NavBtn>}>ジャストの基準</SectionTitle>
+          <div style={{ padding:'0 22px 8px', display:'flex', flexDirection:'column', gap:10 }}>
+            {primaryItems.length === 0 ? (
+              <div style={{ padding:'14px', border:'1px dashed #d8d6d2', borderRadius:2, fontSize:12, color:'#8a8a8a', textAlign:'center' }}>
+                ★ 基準に設定した服がありません。設定から変更できます。
+              </div>
+            ) : primaryItems.map(w => (
+              <button key={w.id} onClick={() => onItem(w)} style={{ appearance:'none', textAlign:'left',
+                display:'flex', alignItems:'center', gap:14, padding:'14px 14px', background:'#ffffff',
+                border:'1px solid #e8e6e2', borderRadius:2, cursor:'pointer', fontFamily:'inherit' }}>
+                <div style={{ width:48, height:48, background:'#f3f0ea', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                  <CategoryGlyph category={w.category} size={28} />
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:13, fontWeight:500, color:'#1c1c1c', marginBottom:2 }}>{w.name}</div>
+                  <div style={{ fontSize:11, color:'#8a8a8a', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{w.brand} · size {w.sizeLabel}</div>
+                </div>
+                <div style={{ fontSize:18, color:'#cdcac3', marginLeft:8 }}>›</div>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {!isEmpty && (
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:1, margin:'14px 22px 4px', background:'#e8e6e2', border:'1px solid #e8e6e2' }}>
+          {Object.values(CATEGORIES).map(c => (
+            <div key={c.id} style={{ background:'#faf8f4', padding:'14px 8px', textAlign:'center' }}>
+              <CategoryGlyph category={c.id} size={26} color="#4a4a4a" />
+              <div style={{ fontSize:10, letterSpacing:'0.12em', color:'#8a8a8a', marginTop:4 }}>{c.label.toUpperCase()}</div>
+              <div style={{ fontSize:18, fontWeight:500, marginTop:2, color:'#1c1c1c', fontFamily:'"Cormorant Garamond",serif' }}>
+                {counts[c.id]}<span style={{ fontSize:11, color:'#8a8a8a', marginLeft:2 }}>着</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <SectionTitle kicker="History" action={history.length > 0 ? <NavBtn ghost>すべて</NavBtn> : null}>最近の比較</SectionTitle>
       <div style={{ padding:'0 22px 28px', display:'flex', flexDirection:'column', gap:8 }}>
@@ -806,6 +862,7 @@ function SetupEditScreen({ initial, onBack, onSave }) {
     id: 'w' + Date.now(), category:'pants', name:'', brand:'', sizeLabel:'', primary:false, measures:{}, note:'',
   });
   const [focusedField, setFocusedField] = React.useState(null);
+  const [pasteOpen, setPasteOpen] = React.useState(false);
   const cat = CATEGORIES[draft.category];
   const update = (patch) => setDraft(d => ({ ...d, ...patch }));
   const updateMeasure = (k, v) => {
@@ -813,7 +870,17 @@ function SetupEditScreen({ initial, onBack, onSave }) {
     setDraft(d => ({ ...d, measures: { ...d.measures, [k]: isNaN(num) ? undefined : num } }));
   };
 
+  const onAIResult = (result, selectedSize) => {
+    let next = { ...draft };
+    if (result.category && result.category !== draft.category) { next.category = result.category; next.measures = {}; }
+    next.measures = { ...(next.measures || {}), ...selectedSize.measures };
+    if (selectedSize.sizeLabel) next.sizeLabel = selectedSize.sizeLabel;
+    setDraft(next);
+    setPasteOpen(false);
+  };
+
   return (
+    <>
     <Chrome title={isNew?'新規登録':'編集'} leading={<NavBtn onClick={onBack}>‹ 戻る</NavBtn>} trailing={<NavBtn onClick={() => onSave(draft)}>保存</NavBtn>}>
       <div style={{ padding:'8px 22px 18px' }}>
         <FieldLabel>カテゴリ</FieldLabel>
@@ -859,6 +926,20 @@ function SetupEditScreen({ initial, onBack, onSave }) {
         <TextField label="サイズ表記" placeholder="例：31, M, 4" value={draft.sizeLabel} onChange={v => update({ sizeLabel:v })} />
       </div>
 
+      <div style={{ padding:'0 22px 4px' }}>
+        <button onClick={() => setPasteOpen(true)} style={{ appearance:'none', cursor:'pointer', fontFamily:'inherit',
+          width:'100%', padding:'12px 14px', background:'#ffffff', border:'1px dashed #cdcac3',
+          borderRadius:2, color:'#1c1c1c', textAlign:'left', display:'flex', alignItems:'center', gap:10 }}>
+          <span style={{ width:22, height:22, borderRadius:'50%', background:'#1c1c1c', color:'#faf8f4',
+            display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontFamily:'"Cormorant Garamond",serif', flexShrink:0 }}>AI</span>
+          <span style={{ flex:1 }}>
+            <span style={{ display:'block', fontSize:12, fontWeight:500 }}>AIでサイズを自動入力</span>
+            <span style={{ display:'block', fontSize:10, color:'#8a8a8a', marginTop:2 }}>サイズ表のテキストや画像から読み取ります</span>
+          </span>
+          <span style={{ fontSize:14, color:'#cdcac3' }}>›</span>
+        </button>
+      </div>
+
       <FieldLabel padded>寸法（cm）</FieldLabel>
       <div style={{ margin:'0 22px 16px', border:'1px solid #ececec', background:'#ffffff' }}>
         {cat.fields.map((f, i) => (
@@ -901,6 +982,10 @@ function SetupEditScreen({ initial, onBack, onSave }) {
         <PrimaryBtn onClick={() => onSave(draft)}>保存する</PrimaryBtn>
       </div>
     </Chrome>
+    {pasteOpen && (
+      <PasteSizeTableModal hintCategory={draft.category} onClose={() => setPasteOpen(false)} onResult={onAIResult} />
+    )}
+    </>
   );
 }
 
@@ -1085,11 +1170,46 @@ function CompareInputScreen({ wardrobe, draft, setDraft, onBack, onCompute }) {
 }
 
 function PasteSizeTableModal({ hintCategory, onClose, onResult }) {
+  const [tab, setTab] = React.useState('text');
   const [text, setText] = React.useState('');
+  const [imageData, setImageData] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
   const [preview, setPreview] = React.useState(null);
   const [selectedIdx, setSelectedIdx] = React.useState(0);
+  const fileInputRef = React.useRef(null);
+  const pasteAreaRef = React.useRef(null);
+
+  const resetPreview = () => { setPreview(null); setError(null); setSelectedIdx(0); };
+
+  const processImageFile = (file) => {
+    if (!file || !file.type.startsWith('image/')) { setError('画像ファイルを選択してください'); return; }
+    resetPreview();
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      const base64 = dataUrl.split(',')[1];
+      setImageData({ base64, mimeType: file.type, preview: dataUrl });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  React.useEffect(() => {
+    if (tab !== 'image' || !pasteAreaRef.current) return;
+    const el = pasteAreaRef.current;
+    const onPaste = (e) => {
+      const items = e.clipboardData?.items || [];
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          processImageFile(item.getAsFile());
+          return;
+        }
+      }
+    };
+    el.addEventListener('paste', onPaste);
+    return () => el.removeEventListener('paste', onPaste);
+  }, [tab]);
 
   const onParse = async () => {
     if (!text.trim()) return;
@@ -1101,10 +1221,26 @@ function PasteSizeTableModal({ hintCategory, onClose, onResult }) {
     finally { setLoading(false); }
   };
 
+  const onParseImage = async () => {
+    if (!imageData) return;
+    setLoading(true); setError(null); setPreview(null);
+    try {
+      const result = await window.fittoLLM.parseSizeTableFromImage(imageData.base64, imageData.mimeType, hintCategory);
+      setPreview(result); setSelectedIdx(0);
+    } catch (e) { setError(e.message || '画像の読み取りに失敗しました'); }
+    finally { setLoading(false); }
+  };
+
   const fieldJa = { waist:'ウエスト', hip:'ヒップ', thigh:'もも幅', rise:'股上', hem:'裾幅', inseam:'股下',
     shoulder:'肩幅', chest:'身幅', length:'着丈', sleeve:'袖丈', cuff:'袖口', neck:'首回り' };
   const catLabel = { pants:'ボトムス', tops:'トップス', outer:'アウター' };
   const selected = preview?.sizes?.[selectedIdx];
+
+  const tabStyle = (active) => ({
+    flex:1, appearance:'none', border:'none', borderBottom: active ? '2px solid #1c1c1c' : '2px solid transparent',
+    background:'transparent', padding:'8px 0', fontSize:12, fontWeight:active?600:400,
+    color: active ? '#1c1c1c' : '#8a8a8a', cursor:'pointer', fontFamily:'inherit', letterSpacing:'0.04em'
+  });
 
   return (
     <div style={{ position:'absolute', inset:0, zIndex:100, background:'rgba(28,28,28,0.45)',
@@ -1115,16 +1251,61 @@ function PasteSizeTableModal({ hintCategory, onClose, onResult }) {
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <span style={{ width:22, height:22, borderRadius:'50%', background:'#1c1c1c', color:'#faf8f4',
               display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontFamily:'"Cormorant Garamond",serif' }}>AI</span>
-            <div style={{ fontFamily:'"Cormorant Garamond","Noto Sans JP",serif', fontSize:18, fontWeight:500, color:'#1c1c1c' }}>サイズ表を貼り付け</div>
+            <div style={{ fontFamily:'"Cormorant Garamond","Noto Sans JP",serif', fontSize:18, fontWeight:500, color:'#1c1c1c' }}>AIでサイズを読み取る</div>
           </div>
           <button onClick={onClose} style={{ appearance:'none', border:'none', background:'transparent', fontSize:13, color:'#8a8a8a', cursor:'pointer', padding:4 }}>閉じる</button>
         </div>
-        <div style={{ fontSize:11, color:'#4a4a4a', lineHeight:1.7, marginBottom:10 }}>ECサイトのサイズ表をペーストしてください。項目名と数値を読み取って自動で入力します。</div>
-        <textarea value={text} onChange={(e) => setText(e.target.value)}
-          placeholder={'例：\nサイズ  ウエスト  ヒップ  股上  股下  もも幅  裾幅\nS      78      101    26    60    29    15.5'}
-          style={{ width:'100%', minHeight:140, padding:'10px 12px', border:'1px solid #e8e6e2', borderRadius:2,
-            fontSize:12, fontFamily:'ui-monospace,"SF Mono",Menlo,monospace', color:'#1c1c1c',
-            background:'#ffffff', resize:'vertical', outline:'none', boxSizing:'border-box' }} />
+
+        <div style={{ display:'flex', borderBottom:'1px solid #e8e6e2', marginBottom:14 }}>
+          <button style={tabStyle(tab==='text')} onClick={() => { setTab('text'); resetPreview(); }}>テキスト</button>
+          <button style={tabStyle(tab==='image')} onClick={() => { setTab('image'); resetPreview(); }}>画像</button>
+        </div>
+
+        {tab === 'text' && (
+          <>
+            <div style={{ fontSize:11, color:'#4a4a4a', lineHeight:1.7, marginBottom:10 }}>ECサイトのサイズ表をコピーしてペーストしてください。</div>
+            <textarea value={text} onChange={(e) => setText(e.target.value)}
+              placeholder={'例：\nサイズ  ウエスト  ヒップ  股上  股下  もも幅  裾幅\nS      78      101    26    60    29    15.5'}
+              style={{ width:'100%', minHeight:140, padding:'10px 12px', border:'1px solid #e8e6e2', borderRadius:2,
+                fontSize:12, fontFamily:'ui-monospace,"SF Mono",Menlo,monospace', color:'#1c1c1c',
+                background:'#ffffff', resize:'vertical', outline:'none', boxSizing:'border-box' }} />
+          </>
+        )}
+
+        {tab === 'image' && (
+          <>
+            <div style={{ fontSize:11, color:'#4a4a4a', lineHeight:1.7, marginBottom:10 }}>
+              サイズ表の画像を読み込んでください。スクリーンショットのペースト、カメラ撮影、ファイル選択が使えます。
+            </div>
+            <div ref={pasteAreaRef} tabIndex={0}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => { e.preventDefault(); processImageFile(e.dataTransfer.files[0]); }}
+              style={{ width:'100%', minHeight:140, border:'1px dashed #cdcac3', borderRadius:2, background:'#ffffff',
+                display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
+                gap:10, boxSizing:'border-box', outline:'none', cursor:'default',
+                overflow:'hidden', position:'relative' }}>
+              {imageData ? (
+                <>
+                  <img src={imageData.preview} alt="" style={{ maxWidth:'100%', maxHeight:200, objectFit:'contain' }} />
+                  <button onClick={() => setImageData(null)} style={{ appearance:'none', border:'none', background:'rgba(28,28,28,0.6)', color:'#fff',
+                    padding:'4px 10px', borderRadius:999, fontSize:11, cursor:'pointer', fontFamily:'inherit' }}>削除</button>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize:11, color:'#8a8a8a', textAlign:'center', lineHeight:1.8 }}>
+                    ここに画像をペースト<br/>またはドロップ
+                  </div>
+                  <button onClick={() => fileInputRef.current?.click()} style={{ appearance:'none', cursor:'pointer', fontFamily:'inherit',
+                    padding:'8px 18px', background:'#1c1c1c', color:'#faf8f4', border:'none', borderRadius:2, fontSize:12 }}>
+                    カメラ / ファイルを選択
+                  </button>
+                </>
+              )}
+            </div>
+            <input ref={fileInputRef} type="file" accept="image/*" capture="environment"
+              style={{ display:'none' }} onChange={(e) => processImageFile(e.target.files?.[0])} />
+          </>
+        )}
         {error && <div style={{ marginTop:10, padding:'10px 12px', background:'#fbf3ee', border:'1px solid #e8c7b6', color:'#b86a4a', fontSize:11, lineHeight:1.6 }}>{error}</div>}
         {preview && (
           <div style={{ marginTop:12, padding:'12px 14px', background:'#ffffff', border:'1px solid #ececec' }}>
@@ -1169,11 +1350,19 @@ function PasteSizeTableModal({ hintCategory, onClose, onResult }) {
           <button onClick={onClose} style={{ appearance:'none', cursor:'pointer', flex:1, background:'transparent',
             color:'#1c1c1c', border:'1px solid #d8d6d2', borderRadius:2, padding:'12px 16px', fontSize:13, fontFamily:'inherit' }}>キャンセル</button>
           {!preview ? (
-            <button onClick={onParse} disabled={loading||!text.trim()} style={{ appearance:'none', cursor:loading?'default':'pointer', flex:2,
-              background:loading||!text.trim()?'#cdcac3':'#1c1c1c', color:'#faf8f4', border:'none', borderRadius:2,
-              padding:'12px 16px', fontSize:13, fontWeight:500, letterSpacing:'0.06em', fontFamily:'inherit' }}>
-              {loading?'読み取り中…':'AIで読み取る'}
-            </button>
+            tab === 'text' ? (
+              <button onClick={onParse} disabled={loading||!text.trim()} style={{ appearance:'none', cursor:loading?'default':'pointer', flex:2,
+                background:loading||!text.trim()?'#cdcac3':'#1c1c1c', color:'#faf8f4', border:'none', borderRadius:2,
+                padding:'12px 16px', fontSize:13, fontWeight:500, letterSpacing:'0.06em', fontFamily:'inherit' }}>
+                {loading?'読み取り中…':'AIで読み取る'}
+              </button>
+            ) : (
+              <button onClick={onParseImage} disabled={loading||!imageData} style={{ appearance:'none', cursor:loading?'default':'pointer', flex:2,
+                background:loading||!imageData?'#cdcac3':'#1c1c1c', color:'#faf8f4', border:'none', borderRadius:2,
+                padding:'12px 16px', fontSize:13, fontWeight:500, letterSpacing:'0.06em', fontFamily:'inherit' }}>
+                {loading?'解析中…':'画像を解析する'}
+              </button>
+            )
           ) : (
             <button onClick={() => onResult(preview, selected)}
               disabled={!selected||Object.keys(selected.measures).length===0} style={{ appearance:'none', cursor:'pointer', flex:2,
@@ -1372,14 +1561,8 @@ window.fittoScreens.ResultScreen = ResultScreen;
 
 <!-- ── app ── -->
 <script type="text/babel">
-const { DEFAULT_WARDROBE, SAMPLE_CANDIDATE_PANTS } = window.fittoData;
+const { DEFAULT_WARDROBE, EMPTY_DRAFT } = window.fittoData;
 const { HomeScreen, SetupListScreen, SetupEditScreen, CompareInputScreen, ResultScreen } = window.fittoScreens;
-
-const SAMPLE_HISTORY = [
-  { id:'h1', category:'tops', brand:'AURALEE', product:'Brushed Knit', date:'5月 2日', baseName:'ジャストTシャツ', label:'ぴったり', tone:'ok' },
-  { id:'h2', category:'pants', brand:'STUDIO NICHOLSON', product:'Sorte Pant', date:'4月 28日', baseName:'ジャストパンツ', label:'少しゆるめ', tone:'soft' },
-  { id:'h3', category:'outer', brand:'LEMAIRE', product:'Soft Coat', date:'4月 14日', baseName:'ジャストコート', label:'ゆるい', tone:'warn' },
-];
 
 function useLocalStorage(key, defaultValue) {
   const [value, setValue] = React.useState(() => {
@@ -1401,15 +1584,9 @@ function useLocalStorage(key, defaultValue) {
 function App() {
   const [t, setTweak] = useTweaks(window.TWEAK_DEFAULTS);
   const [wardrobe, setWardrobe] = useLocalStorage('fitto_wardrobe', DEFAULT_WARDROBE);
-  const [history, setHistory]   = useLocalStorage('fitto_history', SAMPLE_HISTORY);
+  const [history, setHistory]   = useLocalStorage('fitto_history', []);
   const [screen, setScreen]     = React.useState('home');
-  const [draft, setDraft] = React.useState({
-    category:'pants',
-    brand: SAMPLE_CANDIDATE_PANTS.brand + ' — ' + SAMPLE_CANDIDATE_PANTS.product,
-    sizeLabel: SAMPLE_CANDIDATE_PANTS.sizeLabel,
-    baseId: 'w1',
-    measures: { ...SAMPLE_CANDIDATE_PANTS.measures },
-  });
+  const [draft, setDraft] = React.useState({ ...EMPTY_DRAFT });
   const [editTarget, setEditTarget] = React.useState(null);
 
   const baseGarment = wardrobe.find(w => w.id === draft.baseId)
