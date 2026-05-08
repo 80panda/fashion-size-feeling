@@ -1,10 +1,15 @@
 # fitto — CLAUDE.md
 
+## 本番URL（ユーザー向け）
+
+**https://80panda.github.io/fashion-size-feeling/app.html**
+（GitHub Pages 経由の iframe 配信 → GAS バナーなし）
+
 ## GAS デプロイ情報
 
 | バージョン | デプロイID | URL |
 |---|---|---|
-| v1.0.0 | `AKfycbyo4NFqE8XTn8Bl7HfBC-rMn33F2TPLvvTiTSBbhOS4YPTGtjNyckhlb1-Y4sIDvbv-MA` | https://script.google.com/macros/s/AKfycbyo4NFqE8XTn8Bl7HfBC-rMn33F2TPLvvTiTSBbhOS4YPTGtjNyckhlb1-Y4sIDvbv-MA/exec |
+| v1.7.2 | `AKfycbyo4NFqE8XTn8Bl7HfBC-rMn33F2TPLvvTiTSBbhOS4YPTGtjNyckhlb1-Y4sIDvbv-MA` | https://script.google.com/macros/s/AKfycbyo4NFqE8XTn8Bl7HfBC-rMn33F2TPLvvTiTSBbhOS4YPTGtjNyckhlb1-Y4sIDvbv-MA/exec |
 
 本番URLを変えずに更新するコマンド:
 ```bash
