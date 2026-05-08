@@ -806,7 +806,7 @@ function TextField({ label, value, onChange, placeholder }) {
   );
 }
 
-function SetupListScreen({ wardrobe, onBack, onAdd, onEdit, onTogglePrimary }) {
+function SetupListScreen({ wardrobe, onBack, onAdd, onEdit, onTogglePrimary, onReset }) {
   const { Chrome, NavBtn, PrimaryBtn, CategoryGlyph } = window.fittoUI;
   const groups = ['pants','tops','outer'].map(cat => ({ cat, items: wardrobe.filter(w => w.category === cat) }));
 
@@ -847,8 +847,16 @@ function SetupListScreen({ wardrobe, onBack, onAdd, onEdit, onTogglePrimary }) {
         </div>
       ))}
 
-      <div style={{ padding:'24px 22px 28px' }}>
+      <div style={{ padding:'24px 22px 8px' }}>
         <PrimaryBtn onClick={onAdd}>＋ 新しく登録する</PrimaryBtn>
+      </div>
+      <div style={{ padding:'8px 22px 32px' }}>
+        <button onClick={() => {
+          if (window.confirm('服とデータをすべて削除してリセットしますか？この操作は元に戻せません。')) onReset();
+        }} style={{ appearance:'none', border:'none', background:'transparent', padding:'10px 0',
+          fontSize:12, color:'#b86a4a', fontFamily:'inherit', cursor:'pointer', letterSpacing:'0.04em' }}>
+          すべてのデータをリセット
+        </button>
       </div>
     </Chrome>
   );
@@ -1641,7 +1649,8 @@ function App() {
     screenEl = <SetupListScreen wardrobe={wardrobe} onBack={() => setScreen('home')}
       onAdd={() => { setEditTarget(null); setScreen('edit'); }}
       onEdit={(item) => { setEditTarget(item); setScreen('edit'); }}
-      onTogglePrimary={onTogglePrimary} />;
+      onTogglePrimary={onTogglePrimary}
+      onReset={() => { setWardrobe([]); setHistory([]); setScreen('home'); }} />;
   } else if (screen === 'edit') {
     screenEl = <SetupEditScreen initial={editTarget} onBack={() => setScreen('setup')} onSave={onSaveItem} />;
   }
