@@ -227,6 +227,12 @@ const TOLERANCE = {
   sleeve:{ fit:2, loose:4, major:7 }, inseam:{ fit:2, loose:4, major:7 },
 };
 
+// Importance weight per measurement key (higher = affects fit comfort more)
+const MEASURE_WEIGHTS = {
+  waist:3.0, hip:2.5, thigh:2.0, inseam:2.0, rise:1.5, hem:1.0,
+  shoulder:3.0, chest:2.5, length:2.0, sleeve:1.5, neck:1.5, cuff:1.0,
+};
+
 function estimateField(category, key, measures) {
   const m = measures || {};
   if (category === 'pants') {
@@ -275,25 +281,57 @@ function compareItem(baseGarment, candidate) {
 function verdict(rows) {
   const valid = rows.filter(r => r.diff != null);
   if (!valid.length) return { label:'判定不可', score:null, summary:'サイズ情報が足りません', tone:'neutral' };
-  let score = 100, majorCount = 0, looseCount = 0, tightCount = 0;
+
+  let weightedScore = 0, totalWeight = 0;
+  let looseCount = 0, tightCount = 0, majorCount = 0;
+
   valid.forEach(r => {
     const tol = TOLERANCE[r.key] || { fit:2, loose:4, major:7 };
+    const w   = MEASURE_WEIGHTS[r.key] || 1.5;
     const abs = Math.abs(r.diff);
-    if (abs <= tol.fit) score -= 0;
-    else if (abs <= tol.loose) score -= 4;
-    else if (abs <= tol.major) score -= 10;
-    else { score -= 18; majorCount++; }
-    if (r.diff > tol.fit) looseCount++;
+
+    // Continuous penalty [0–100] within this measurement (no cliffs)
+    let penalty;
+    if (abs <= tol.fit) {
+      penalty = 0;
+    } else if (abs <= tol.loose) {
+      penalty = 25 * (abs - tol.fit) / (tol.loose - tol.fit);
+    } else if (abs <= tol.major) {
+      penalty = 25 + 50 * (abs - tol.loose) / (tol.major - tol.loose);
+    } else {
+      penalty = Math.min(100, 75 + 25 * (abs - tol.major) / tol.major);
+    }
+    // Tight hurts slightly more than loose (physical discomfort)
+    if (r.diff < 0) penalty = Math.min(100, penalty * 1.15);
+
+    weightedScore += (100 - penalty) * w;
+    totalWeight   += w;
+
+    if (r.diff > tol.fit)  looseCount++;
     if (r.diff < -tol.fit) tightCount++;
+    if (abs > tol.major)   majorCount++;
   });
-  score = Math.max(0, Math.round(score));
+
+  // Normalized 0–100, comparable across garments with different measurement counts
+  const score = Math.max(0, Math.round(weightedScore / totalWeight));
+
+  const dom = looseCount > tightCount ? 'loose' : tightCount > looseCount ? 'tight' : 'mixed';
   let label, tone, summary;
-  if (score >= 88) { label='ぴったり'; tone='ok'; summary='ジャストとほぼ同寸。安心して買えます。'; }
-  else if (score >= 70 && looseCount > tightCount) { label='少しゆるめ'; tone='soft'; summary='リラックスフィット寄り。ゆとりが好みなら◎'; }
-  else if (score >= 70 && tightCount > looseCount) { label='少しタイト'; tone='soft'; summary='細身寄り。試着できると安心。'; }
-  else if (score >= 50 && looseCount > tightCount) { label='ゆるい'; tone='warn'; summary='オーバーサイズ寄り。シルエットが大きく変わります。'; }
-  else if (score >= 50 && tightCount > looseCount) { label='タイト'; tone='warn'; summary='締め付け感が出やすいサイズ感です。'; }
-  else { label='サイズ差大'; tone='bad'; summary='ジャストとは別物のシルエットになります。'; }
+  if (score >= 88) {
+    label='ぴったり'; tone='ok'; summary='ジャストとほぼ同寸。安心して買えます。';
+  } else if (score >= 72) {
+    if (dom === 'loose') { label='やや大きめ'; tone='soft'; summary='全体的にゆとりがある仕上がりです。'; }
+    else if (dom === 'tight') { label='やや小さめ'; tone='soft'; summary='全体的に少し細身な仕上がりです。'; }
+    else { label='やや差あり'; tone='soft'; summary='部位によって差があります。試着確認を。'; }
+  } else if (score >= 52) {
+    if (dom === 'loose') { label='大きめ'; tone='warn'; summary='ゆとりが多め。シルエットが変わります。'; }
+    else if (dom === 'tight') { label='小さめ'; tone='warn'; summary='締め付け感が出やすいサイズ感です。'; }
+    else { label='差あり'; tone='warn'; summary='複数箇所でサイズ差があります。'; }
+  } else {
+    if (dom === 'loose') { label='かなり大きめ'; tone='bad'; summary='ジャストとは別物のシルエットになります。'; }
+    else if (dom === 'tight') { label='かなり小さめ'; tone='bad'; summary='ジャストとは別物のシルエットになります。'; }
+    else { label='サイズ差大'; tone='bad'; summary='ジャストとは別物のシルエットになります。'; }
+  }
   return { label, score, summary, tone, majorCount, looseCount, tightCount, valid:valid.length };
 }
 
@@ -310,7 +348,7 @@ function calloutText(diff, axis) {
   return { headline:`${sign}${abs}cm`, qual };
 }
 
-window.fittoData = { CATEGORIES, DEFAULT_WARDROBE, EMPTY_DRAFT, TOLERANCE, estimateField, compareItem, verdict, calloutText };
+window.fittoData = { CATEGORIES, DEFAULT_WARDROBE, EMPTY_DRAFT, TOLERANCE, MEASURE_WEIGHTS, estimateField, compareItem, verdict, calloutText };
 </script>
 
 <!-- ── llm (Gemini via google.script.run) ── -->
@@ -483,15 +521,13 @@ function garmentDims(category, m) {
     return { halfWidth, totalH };
   } else {
     // tops & outer
-    const halfShoulder = m.shoulder / 2;
-    const halfChest = m.chest / 2;
-    const sleeveAngleDeg = 50 + Math.min(m.sleeve, 80) * 0.4; // 50→82
-    const sleeveAngleRad = sleeveAngleDeg * Math.PI / 180;
-    const sleeveDx = Math.cos(sleeveAngleRad) * m.sleeve;
-    const sleeveDy = Math.sin(sleeveAngleRad) * m.sleeve;
-    const halfWidth = Math.max(halfShoulder + sleeveDx, halfChest);
-    const totalH = Math.max(m.length, sleeveDy + 4);
-    return { halfWidth, totalH, sleeveAngleRad, sleeveDx, sleeveDy, halfShoulder, halfChest };
+    const hs = m.shoulder / 2;
+    const hc = m.chest / 2;
+    const a = (45 + Math.min(m.sleeve, 65) * 0.44) * Math.PI / 180;
+    const cosA = Math.cos(a), sinA = Math.sin(a);
+    const halfWidth = Math.max(hs + cosA * m.sleeve + m.cuff / 2, hc);
+    const totalH = Math.max(m.length, sinA * m.sleeve + m.cuff / 2 * cosA);
+    return { halfWidth, totalH };
   }
 }
 
@@ -534,45 +570,53 @@ function buildPantsPath(m, scale, cx, y0) {
 }
 
 function buildTopsPath(m, scale, cx, y0, isOuter=false) {
-  const sw = m.shoulder * scale;          // total shoulder width
-  const cw = m.chest * scale;             // total chest width (flat)
-  const lh = m.length * scale;
-  const sl = m.sleeve * scale;
-  const cf = m.cuff * scale;              // cuff width (flat)
-  const neckHalf = (m.neck / Math.PI) / 2 * scale; // neck opening half-width
-  const neckDepth = neckHalf * 1.2;
-  const angleDeg = 50 + Math.min(m.sleeve, 80) * 0.4;
-  const angleRad = angleDeg * Math.PI / 180;
-  const dx = Math.cos(angleRad) * sl;
-  const dy = Math.sin(angleRad) * sl;
-  // Underarm position - drop along sleeve from shoulder a bit so body side connects naturally
-  const underarmFrac = 0.18;
-  const ax_r = cx + sw/2 + dx * underarmFrac;
-  const ay_r = y0 + dy * underarmFrac;
-  // Cuff direction perpendicular to sleeve (outward from body)
-  const cuffDx = -Math.sin(angleRad) * cf / 2;
-  const cuffDy = Math.cos(angleRad) * cf / 2;
-  const sleeveTipUpper_r = { x: cx + sw/2 + dx + cuffDx*-1, y: y0 + dy + cuffDy*-1 };
-  const sleeveTipLower_r = { x: cx + sw/2 + dx + cuffDx,    y: y0 + dy + cuffDy };
+  const f   = v => v.toFixed(1);
+  const hs  = m.shoulder / 2 * scale;
+  const hc  = m.chest    / 2 * scale;
+  const lh  = m.length       * scale;
+  const sl  = m.sleeve       * scale;
+  const hcf = m.cuff     / 2 * scale;
+
+  // Neck opening derived from circumference
+  const nw = Math.min((m.neck / (2 * Math.PI)) * scale, hs * 0.45);
+  const nd = nw * 1.0;
+
+  // Armhole drop: ~28% of length, max 22 cm
+  const armDrop = Math.min(m.length * 0.28, 22) * scale;
+
+  // Sleeve angle: 45° (short) → ~74° (long), steeper = more downward hang
+  const a    = (45 + Math.min(m.sleeve, 65) * 0.44) * Math.PI / 180;
+  const cosA = Math.cos(a), sinA = Math.sin(a);
+
+  // Right sleeve tip center
+  const tipX = cx + hs + cosA * sl;
+  const tipY = y0 + sinA * sl;
+
+  // Cuff corners perpendicular to sleeve direction
+  // upper (toward top of sleeve): rotate sleeve dir 90° CW → (sinA, -cosA)
+  // lower (toward underside):     rotate 90° CCW → (-sinA, cosA)
+  const cuX = tipX + sinA * hcf;
+  const cuY = Math.max(y0 + 2, tipY - cosA * hcf);  // clamp: never above shoulder
+  const clX = tipX - sinA * hcf;
+  const clY = tipY + cosA * hcf;
+
+  // Armhole corner = body side x, armhole-drop y
+  const rArmX = cx + hc, rArmY = y0 + armDrop;
+
   return [
-    `M ${cx - sw/2} ${y0}`,                                          // left shoulder
-    `L ${cx - neckHalf} ${y0}`,
-    `Q ${cx} ${y0 + neckDepth} ${cx + neckHalf} ${y0}`,             // neckline curve
-    `L ${cx + sw/2} ${y0}`,                                          // right shoulder
-    // right sleeve
-    `L ${cx + sw/2 + dx - cuffDx} ${y0 + dy - cuffDy}`,            // sleeve outer top (extending up cuff half)
-    `L ${cx + sw/2 + dx + cuffDx} ${y0 + dy + cuffDy}`,            // sleeve outer bottom (other side of cuff)
-    `L ${ax_r.toFixed(2)} ${ay_r.toFixed(2)}`,                       // underarm right
-    // body right side
-    `L ${cx + cw/2} ${y0 + lh}`,
-    // bottom
-    `L ${cx - cw/2} ${y0 + lh}`,
-    // body left side
-    `L ${(cx - sw/2 - dx * underarmFrac).toFixed(2)} ${(y0 + dy * underarmFrac).toFixed(2)}`,
-    // left sleeve outer
-    `L ${cx - sw/2 - dx + cuffDx} ${y0 + dy + cuffDy}`,            // mirrored cuff bottom-of-line
-    `L ${cx - sw/2 - dx - cuffDx} ${y0 + dy - cuffDy}`,            // mirrored cuff top
-    'Z'
+    `M ${f(cx - hs)} ${f(y0)}`,                               // left shoulder
+    `L ${f(cx - nw)} ${f(y0)}`,
+    `Q ${f(cx)} ${f(y0 + nd)} ${f(cx + nw)} ${f(y0)}`,        // neck curve
+    `L ${f(cx + hs)} ${f(y0)}`,                                // right shoulder
+    `L ${f(cuX)} ${f(cuY)}`,                                   // right cuff upper (outer seam)
+    `L ${f(clX)} ${f(clY)}`,                                   // right cuff lower (across cuff opening)
+    `L ${f(rArmX)} ${f(rArmY)}`,                               // right armhole (inner seam → body)
+    `L ${f(cx + hc)} ${f(y0 + lh)}`,                          // right hem
+    `L ${f(cx - hc)} ${f(y0 + lh)}`,                          // left hem
+    `L ${f(cx - hc)} ${f(rArmY)}`,                             // left armhole
+    `L ${f(2*cx - clX)} ${f(clY)}`,                           // left cuff lower (mirrored)
+    `L ${f(2*cx - cuX)} ${f(cuY)}`,                           // left cuff upper (mirrored)
+    'Z',
   ].join(' ');
 }
 
@@ -592,7 +636,7 @@ function GarmentShape({ category, measures, scale, originY=PADDING, dashed=false
   return (
     <g opacity={opacity}>
       <path d={path} fill={fill} stroke={stroke} strokeWidth={strokeWidth}
-        strokeDasharray={dashed ? '4 3' : null}
+        strokeDasharray={dashed ? '7 3' : null}
         strokeLinejoin="round" strokeLinecap="round" />
       {category === 'outer' && (
         <path d={buildOuterFront(m, scale, cx, originY)} fill="none" stroke={stroke} strokeWidth={strokeWidth*0.7}
@@ -622,29 +666,32 @@ function edgeAnchor(category, key, m, scale, originY=PADDING) {
     if (key === 'hem')    return { ax: cx - hemW,      ay: yBot,           side: 'left'  };
     if (key === 'inseam') return { ax: cx + hemW * 0.4, ay: (yCrotch + yBot)/2, side:'right' };
   } else {
-    const sw = m.shoulder * scale;
-    const cw = m.chest * scale;
-    const lh = m.length * scale;
-    const sl = m.sleeve * scale;
-    const cf = m.cuff * scale;
-    const neckHalf = (m.neck / Math.PI) / 2 * scale;
-    const angleRad = (50 + Math.min(m.sleeve, 80) * 0.4) * Math.PI / 180;
-    const dx = Math.cos(angleRad) * sl;
-    const dy = Math.sin(angleRad) * sl;
-    if (key === 'shoulder') return { ax: cx - sw/2,    ay: originY,                side: 'left'  };
-    if (key === 'neck')     return { ax: cx + neckHalf, ay: originY + neckHalf*0.4, side: 'right' };
-    if (key === 'sleeve')   return { ax: cx + sw/2 + dx, ay: originY + dy,         side: 'right' };
-    if (key === 'cuff')     return { ax: cx + sw/2 + dx, ay: originY + dy + cf*0.5, side: 'right' };
-    if (key === 'chest')    return { ax: cx - cw/2,    ay: originY + lh * 0.4,    side: 'left'  };
-    if (key === 'length')   return { ax: cx + cw/2,    ay: originY + lh,           side: 'right' };
-    if (key === 'hem')      return { ax: cx + cw/2,    ay: originY + lh,           side: 'right' };
+    const hs  = m.shoulder / 2 * scale;
+    const hc  = m.chest    / 2 * scale;
+    const lh  = m.length       * scale;
+    const sl  = m.sleeve       * scale;
+    const hcf = m.cuff     / 2 * scale;
+    const a    = (45 + Math.min(m.sleeve, 65) * 0.44) * Math.PI / 180;
+    const cosA = Math.cos(a), sinA = Math.sin(a);
+    const tipX = cx + hs + cosA * sl;
+    const tipY = originY + sinA * sl;
+    const nw   = Math.min((m.neck / (2 * Math.PI)) * scale, hs * 0.45);
+    const armDrop = Math.min(m.length * 0.28, 22) * scale;
+    if (key === 'shoulder') return { ax: cx - hs,    ay: originY,                                  side: 'left'  };
+    if (key === 'neck')     return { ax: cx + nw,    ay: originY + nw * 0.5,                       side: 'right' };
+    if (key === 'sleeve')   return { ax: tipX,       ay: tipY,                                     side: 'right' };
+    if (key === 'cuff')     return { ax: tipX - sinA*hcf, ay: tipY + cosA*hcf,                     side: 'right' };
+    if (key === 'chest')    return { ax: cx - hc,    ay: originY + armDrop + (lh - armDrop) * 0.4, side: 'left'  };
+    if (key === 'length')   return { ax: cx + hc,    ay: originY + lh,                             side: 'right' };
+    if (key === 'hem')      return { ax: cx + hc,    ay: originY + lh,                             side: 'right' };
   }
   return null;
 }
 
-function Callout({ x, y, ax, ay, headline, qual, side='left', tone='fit' }) {
+function Callout({ x, y, ax, ay, keyJa='', headline, qual, side='left', tone='fit' }) {
   const toneColor = { fit:'#1c1c1c', loose:'#6b7c5a', tight:'#b86a4a', major:'#b86a4a' }[tone] || '#1c1c1c';
-  const w = 80, h = qual ? 38 : 24;
+  const w = 80;
+  const h = keyJa ? (qual ? 50 : 36) : (qual ? 38 : 24);
   const px = side === 'left' ? x - w - 6 : x + 6;
   const py = y - h / 2;
   return (
@@ -653,9 +700,11 @@ function Callout({ x, y, ax, ay, headline, qual, side='left', tone='fit' }) {
       <circle cx={ax} cy={ay} r="2" fill={toneColor} />
       <g transform={`translate(${px} ${py})`}>
         <rect x="0" y="0" width={w} height={h} rx="3" fill="#ffffff" stroke={toneColor} strokeWidth="0.7" opacity="0.95" />
-        <text x={w/2} y={qual ? 14 : 16} textAnchor="middle"
-              fontFamily='"Noto Sans JP",system-ui' fontSize="10" fontWeight="600" fill={toneColor}>{headline}</text>
-        {qual && <text x={w/2} y={28} textAnchor="middle"
+        {keyJa && <text x={w/2} y={11} textAnchor="middle"
+              fontFamily='"Noto Sans JP",system-ui' fontSize="8" fontWeight="400" fill="#8a8a8a">{keyJa}</text>}
+        <text x={w/2} y={keyJa ? 26 : (qual ? 14 : 16)} textAnchor="middle"
+              fontFamily='"Noto Sans JP",system-ui' fontSize="11" fontWeight="700" fill={toneColor}>{headline}</text>
+        {qual && <text x={w/2} y={keyJa ? 40 : 28} textAnchor="middle"
               fontFamily='"Noto Sans JP",system-ui' fontSize="9" fontWeight="400" fill="#4a4a4a">{qual}</text>}
       </g>
     </g>
@@ -666,19 +715,31 @@ function FigureCompare({ category, baseMeasures, candidateMeasures, rows=[], sho
   const scale = commonScale(category, baseMeasures, candidateMeasures);
   const baseM = fillMeasures(category, baseMeasures);
   const candM = fillMeasures(category, candidateMeasures || baseMeasures);
+
+  // Vertical centering: compute actual garment height and center in viewport
+  const dimA = garmentDims(category, baseM);
+  const dimB = garmentDims(category, candM);
+  const maxH = Math.max(dimA.totalH, dimB.totalH);
+  const originY = Math.max(PADDING, (VIEW_H - maxH * scale) / 2);
+
   // Calloutの label位置: 配置候補 left/right を交互に
   const callouts = showLabels ? rows.map((r) => {
-    if (r.diff == null || Math.abs(r.diff) < 0.05) return null;
-    const anchor = edgeAnchor(category, r.key, baseM, scale);
+    if (r.diff == null) return null;
+    const anchor = edgeAnchor(category, r.key, baseM, scale, originY);
     if (!anchor) return null;
-    const c = calloutText(r.diff, r.axis);
-    if (!c) return null;
     const tol = window.fittoData.TOLERANCE[r.key] || { fit:2, loose:4, major:7 };
     const abs = Math.abs(r.diff);
+    const isJust = abs <= tol.fit;
+    const keyJa = (CATEGORIES[category]?.fields || []).find(f => f.key === r.key)?.ja || '';
+    if (isJust) {
+      return { key:r.key, anchor, keyJa, headline:'ジャスト', qual:'', tone:'fit' };
+    }
+    const c = calloutText(r.diff, r.axis);
+    if (!c) return null;
     let tone = 'fit';
     if (abs > tol.major) tone = 'major';
     else if (abs > tol.fit) tone = r.diff > 0 ? 'loose' : 'tight';
-    return { key:r.key, anchor, headline:c.headline, qual:c.qual, tone };
+    return { key:r.key, anchor, keyJa, headline:c.headline, qual:c.qual, tone };
   }).filter(Boolean) : [];
 
   // Distribute callouts vertically to avoid overlap
@@ -697,16 +758,16 @@ function FigureCompare({ category, baseMeasures, candidateMeasures, rows=[], sho
   return (
     <svg viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} width="100%" style={{ display:'block', maxHeight:height }}>
       {/* base garment - solid */}
-      <GarmentShape category={category} measures={baseM} scale={scale}
+      <GarmentShape category={category} measures={baseM} scale={scale} originY={originY}
         stroke="#1c1c1c" fill="#fbfaf6" strokeWidth={1.4} />
       {/* candidate overlay - dashed, no fill */}
       {candidateMeasures && Object.keys(candidateMeasures).length > 0 && (
-        <GarmentShape category={category} measures={candM} scale={scale} dashed
-          stroke="#b86a4a" fill="none" strokeWidth={1.4} opacity={0.85} />
+        <GarmentShape category={category} measures={candM} scale={scale} originY={originY} dashed
+          stroke="#b86a4a" fill="none" strokeWidth={2} opacity={0.9} />
       )}
       {callouts.map(c => (
         <Callout key={c.key} ax={c.anchor.ax} ay={c.anchor.ay} x={c.x} y={c.y} side={c.anchor.side}
-          headline={c.headline} qual={c.qual} tone={c.tone} />
+          keyJa={c.keyJa} headline={c.headline} qual={c.qual} tone={c.tone} />
       ))}
     </svg>
   );
@@ -715,10 +776,12 @@ function FigureCompare({ category, baseMeasures, candidateMeasures, rows=[], sho
 function FigureSimple({ category, measures, height=320, highlightField=null }) {
   const scale = commonScale(category, measures, measures);
   const m = fillMeasures(category, measures);
-  const anchor = highlightField ? edgeAnchor(category, highlightField, m, scale) : null;
+  const dim = garmentDims(category, m);
+  const originY = Math.max(PADDING, (VIEW_H - dim.totalH * scale) / 2);
+  const anchor = highlightField ? edgeAnchor(category, highlightField, m, scale, originY) : null;
   return (
     <svg viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} width="100%" style={{ display:'block', maxHeight:height }}>
-      <GarmentShape category={category} measures={m} scale={scale}
+      <GarmentShape category={category} measures={m} scale={scale} originY={originY}
         stroke="#1c1c1c" fill="#fbfaf6" strokeWidth={1.4} />
       {anchor && (
         <g>
@@ -1700,7 +1763,9 @@ function ResultScreen({ base, candidate, wardrobe, judgementUI, showLabels, onBa
             <div style={{ fontSize:11, letterSpacing:'0.16em', color:'#b86a4a', textTransform:'uppercase', fontWeight:500 }}>もっと近い基準があります</div>
           </div>
           <div style={{ fontSize:14, color:'#1c1c1c', lineHeight:1.6, marginBottom:12 }}>
-            <span style={{ fontWeight:500 }}>{recommended.base.name}</span> の方が近そうです（スコア {recommended.score} vs 現在 {currentScore}）
+            <span style={{ fontWeight:500 }}>
+              {[recommended.base.brand, recommended.base.sizeLabel ? `size ${recommended.base.sizeLabel}` : ''].filter(Boolean).join(' ') || '別の服'}
+            </span> の方が近そうです（スコア {recommended.score} vs 現在 {currentScore}）
           </div>
           <button onClick={() => onChangeBase()} style={{ appearance:'none', border:'1px solid #b86a4a', background:'#ffffff',
             color:'#b86a4a', padding:'10px 16px', fontSize:13, fontWeight:500, cursor:'pointer', fontFamily:'inherit',
@@ -1726,16 +1791,17 @@ function ResultScreen({ base, candidate, wardrobe, judgementUI, showLabels, onBa
               const isExpanded = expandedId === sr.size.id;
               const dotColor = toneBg[sr.verdict.tone] || '#cdcac3';
               return (
-                <div key={sr.size.id} style={{ background:'#ffffff',
-                  border: isBest ? '2px solid #1c1c1c' : '1px solid #e8e6e2' }}>
+                <div key={sr.size.id} style={{ position:'relative', background:'#ffffff',
+                  border: isBest ? '2px solid #1c1c1c' : '1px solid #e8e6e2',
+                  marginTop: isBest ? 26 : 0 }}>
+                  {isBest && (
+                    <div style={{ position:'absolute', top:-22, left:-2, background:'#1c1c1c', color:'#faf8f4',
+                      fontSize:10, letterSpacing:'0.18em', padding:'4px 10px', textTransform:'uppercase', whiteSpace:'nowrap' }}>★ BEST</div>
+                  )}
                   <button onClick={() => setExpandedId(isExpanded ? null : sr.size.id)}
                     style={{ appearance:'none', width:'100%', textAlign:'left', cursor:'pointer', fontFamily:'inherit',
                       background:'transparent', border:'none', padding:'16px 18px',
                       display:'flex', alignItems:'center', gap:14 }}>
-                    {isBest && (
-                      <div style={{ position:'absolute', marginTop:-30, marginLeft:-2, background:'#1c1c1c', color:'#faf8f4',
-                        fontSize:10, letterSpacing:'0.18em', padding:'4px 10px', textTransform:'uppercase' }}>★ BEST</div>
-                    )}
                     <div style={{ width:50, height:50, borderRadius:'50%', background:dotColor, color:'#faf8f4',
                       display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontFamily:'"Cormorant Garamond",serif' }}>
                       <div style={{ fontSize:17, fontWeight:500, lineHeight:1 }}>{sr.verdict.score ?? '—'}</div>
