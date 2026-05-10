@@ -924,7 +924,7 @@ function VerdictPill({ tone, small=false, children }) {
   );
 }
 
-function HomeScreen({ wardrobe, history, onCompare, onSetup, onItem }) {
+function HomeScreen({ wardrobe, history, onCompare, onSetup, onItem, onHistory }) {
   const counts = {
     pants: wardrobe.filter(w => w.category==='pants').length,
     tops:  wardrobe.filter(w => w.category==='tops').length,
@@ -1000,7 +1000,9 @@ function HomeScreen({ wardrobe, history, onCompare, onSetup, onItem }) {
       <div style={{ padding:'0 24px 32px', display:'flex', flexDirection:'column', gap:10 }}>
         {history.length === 0 && <div style={{ fontSize:14, color:'#8a8a8a', padding:'10px 0', lineHeight:1.7 }}>まだ比較した服はありません。</div>}
         {history.slice(0,4).map(h => (
-          <div key={h.id} style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 0', borderBottom:'1px solid #ececec' }}>
+          <button key={h.id} onClick={() => onHistory?.(h)}
+            style={{ appearance:'none', width:'100%', textAlign:'left', background:'none', border:'none', cursor:'pointer',
+              fontFamily:'inherit', display:'flex', alignItems:'center', gap:14, padding:'14px 0', borderBottom:'1px solid #ececec' }}>
             <div style={{ width:44, height:44, background:'#f3f0ea', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
               <CategoryGlyph category={h.category} size={26} color="#4a4a4a" />
             </div>
@@ -1009,7 +1011,7 @@ function HomeScreen({ wardrobe, history, onCompare, onSetup, onItem }) {
               <div style={{ fontSize:12, color:'#8a8a8a', marginTop:2 }}>{h.date} · 基準: {h.baseName}</div>
             </div>
             <VerdictPill tone={h.tone} small>{h.label}</VerdictPill>
-          </div>
+          </button>
         ))}
       </div>
     </Chrome>
@@ -2120,7 +2122,9 @@ function App() {
     const newH = { id:'h'+Date.now(), category:draft.category,
       brand:(draft.brand||'').split(' — ')[0]||draft.brand||'無題',
       product:(draft.brand||'').split(' — ')[1]||bestSize.sizeLabel||'',
-      date:'今日', baseName:baseGarment?.name||'', label:v.label, tone:v.tone };
+      date:new Date().toLocaleDateString('ja-JP', { month:'numeric', day:'numeric' }),
+      baseName:baseGarment?.name||'', label:v.label, tone:v.tone,
+      savedDraft:{ category:draft.category, brand:draft.brand||'', baseId:draft.baseId||baseGarment?.id, sizes:draft.sizes } };
     setHistory(h => [newH, ...h]);
     setScreen('home');
   };
@@ -2128,7 +2132,8 @@ function App() {
   let screenEl;
   if (screen === 'home') {
     screenEl = <HomeScreen wardrobe={wardrobe} history={history} onCompare={() => setScreen('compare')}
-      onSetup={() => setScreen('setup')} onItem={(w) => { setEditTarget(w); setScreen('edit'); }} />;
+      onSetup={() => setScreen('setup')} onItem={(w) => { setEditTarget(w); setScreen('edit'); }}
+      onHistory={(h) => { if (h.savedDraft) { setDraft(h.savedDraft); setScreen('result'); } }} />;
   } else if (screen === 'compare') {
     screenEl = <CompareInputScreen wardrobe={wardrobe} draft={draft} setDraft={setDraft}
       onBack={() => setScreen('home')} onCompute={() => setScreen('result')} />;
